@@ -1,0 +1,17 @@
+# Render blueprint: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: lovemate
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/ai/status
+    envVars:
+      # Set the real values in the Render dashboard; they are never stored in git.
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: LOVEMATE_PUBLIC_URL
+        sync: false

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoveMate — Visual Design Concepts Showcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            serif: ['Playfair Display', 'Georgia', 'serif'],
+          },
+          colors: {
+            rose: {
+              50: '#fff1f2',
+              100: '#ffe4e6',
+              200: '#fecdd3',
+              300: '#fda4af',
+              400: '#fb7185',
+              500: '#f43f5e',
+              600: '#e11d48',
+              700: '#be123c',
+              800: '#9f1239',
+              900: '#881337',
+              950: '#4c0519',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+    }
+    .glass-dark {
+      background: rgba(26, 17, 34, 0.75);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .glow-rose {
+      box-shadow: 0 0 50px -10px rgba(244, 63, 94, 0.35);
+    }
+    .glow-gold {
+      box-shadow: 0 0 50px -10px rgba(245, 158, 11, 0.3);
+    }
+    .photo-polaroid {
+      background: #ffffff;
+      padding: 10px 10px 32px 10px;
+      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.18);
+      transition: all 0.3s ease;
+    }
+    .photo-polaroid:hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 24px 48px -12px rgba(225, 29, 72, 0.25);
+    }
+  </style>
+</head>
+<body class="bg-zinc-100 text-zinc-900 font-sans antialiased p-4 sm:p-8 space-y-16">
+
+  <!-- Concept Navigation Banner -->
+  <header class="max-w-7xl mx-auto text-center space-y-3">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-100 text-rose-700 text-xs font-bold tracking-wide">
+      <i data-lucide="sparkles" class="w-4 h-4"></i>
+      <span>LoveMate Visual Design Direction Concepts</span>
+    </div>
+    <h1 class="text-3xl sm:text-5xl font-serif font-bold text-zinc-950 tracking-tight">
+      Choose Your Favorite Real-World Design Aesthetic
+    </h1>
+    <p class="text-sm sm:text-base text-zinc-600 max-w-2xl mx-auto">
+      Review these 3 high-fidelity visual concepts designed around real human connection, Coupleship intimacy, and CouplesGPT psychology. Pick the one you love, and we will build it directly into the code!
+    </p>
+
+    <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+      <a href="#concept-1" class="px-5 py-2.5 rounded-xl bg-white text-zinc-800 text-xs font-bold border border-zinc-300 shadow-sm hover:border-rose-400 hover:text-rose-600 transition-all">
+        Concept 1: Warm Editorial Sanctuary (Coupleship)
+      </a>
+      <a href="#concept-2" class="px-5 py-2.5 rounded-xl bg-zinc-900 text-white text-xs font-bold shadow-sm hover:bg-zinc-800 transition-all">
+        Concept 2: Twilight Luxury & Dark Romance
+      </a>
+      <a href="#concept-3" class="px-5 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-sm hover:bg-rose-700 transition-all">
+        Concept 3: Vibrant Everyday Habit Hub (Paired)
+      </a>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       CONCEPT 1: WARM EDITORIAL SANCTUARY (Inspired by Coupleship.app)
+       Warm cream, Playfair serif typography, Polaroid album, double-blind sealed answers
+       ========================================================================= -->
+  <section id="concept-1" class="max-w-7xl mx-auto bg-[#FDFBF7] rounded-[40px] p-6 sm:p-12 border border-[#EBE5DC] shadow-xl space-y-10">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#E8E2D8]">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-widest text-rose-700 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
+          Design Concept 1
+        </span>
+        <h2 class="text-2xl sm:text-4xl font-serif font-bold text-zinc-900 mt-2">
+          Warm Editorial Sanctuary
+        </h2>
+        <p class="text-xs sm:text-sm text-zinc-600 mt-0.5">
+          Coupleship.app style: Emotional safety, warm linen/cream aesthetic, candid couple moments, and double-blind vulnerability.
+        </p>
+      </div>
+
+      <!-- Mode Switcher -->
+      <div class="flex items-center bg-[#F3EFEA] p-1.5 rounded-2xl border border-[#E5DFD5]">
+        <div class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-rose-700 font-bold text-xs shadow-sm">
+          <i data-lucide="heart" class="w-3.5 h-3.5 fill-rose-600 text-rose-600"></i>
+          <span>Our Couple Room</span>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 rounded-xl text-zinc-500 font-semibold text-xs">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          <span>My Private Space</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Showcase with Real Photography & Editorial Type -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <div class="lg:col-span-7 space-y-6">
+        <div class="inline-flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest">
+          <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+          <span>5-Day Connection Streak • Rahul & Ananya</span>
+        </div>
+
+        <h3 class="text-3xl sm:text-5xl font-serif font-bold text-zinc-950 leading-[1.15]">
+          Say the part you haven’t found the words for yet.
+        </h3>
+
+        <p class="text-sm sm:text-base text-zinc-600 leading-relaxed max-w-xl">
+          Talk it through privately with your AI wingman first, so when you share it together in your couple room, it comes out kinder, deeper, and full of grace.
+        </p>
+
+        <!-- Contextual Composer Box -->
+        <div class="p-2 rounded-2xl bg-white border border-[#E2DCD3] shadow-md flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <input
+            type="text"
+            readonly
+            value="Plan an intimate anniversary celebration with early dinner & scenic walk"
+            class="flex-1 bg-transparent text-xs sm:text-sm text-zinc-800 focus:outline-none"
+          />
+          <button class="px-5 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
+            <span>Ask AI</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-4 text-xs text-zinc-500">
+          <span class="flex items-center gap-1 text-emerald-700 font-bold"><i data-lucide="shield-check" class="w-4 h-4"></i> 100% Private</span>
+          <span>•</span>
+          <span class="font-medium">Gottman Method Aligned</span>
+          <span>•</span>
+          <span class="font-medium">Hinglish & English Native</span>
+        </div>
+      </div>
+
+      <!-- Real Couple Polaroid Visual -->
+      <div class="lg:col-span-5 flex justify-center">
+        <div class="relative max-w-sm w-full">
+          <div class="photo-polaroid rounded-2xl transform rotate-2">
+            <img src="/images/couple_hero.jpg" alt="Couple Golden Hour" class="w-full h-80 object-cover rounded-xl" />
+            <div class="mt-4 text-center">
+              <p class="font-serif italic text-base font-semibold text-zinc-900">
+                "We stopped letting small misunderstandings turn into silence."
+              </p>
+              <p class="text-[11px] text-zinc-500 mt-1">
+                Priya & Arjun • Together 2 years • Delhi
+              </p>
+            </div>
+          </div>
+
+          <!-- Floating Badge -->
+          <div class="absolute -bottom-4 -left-4 p-3.5 bg-white rounded-2xl shadow-xl border border-rose-100 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
+              <i data-lucide="heart" class="w-5 h-5 fill-rose-600"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-zinc-900">94% Emotional Sync</div>
+              <div class="text-[10px] text-zinc-500">Synced 20 mins ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Double Blind Sealed Question Demonstration -->
+    <div class="bg-white rounded-3xl p-6 sm:p-8 border border-[#E8E2D8] shadow-sm space-y-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h4 class="font-serif font-bold text-base sm:text-lg text-zinc-900">Today's Sealed Question</h4>
+            <p class="text-xs text-zinc-500">Sealed until your partner answers too.</p>
+          </div>
+        </div>
+        <span class="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
+          Double-Blind Reveal
+        </span>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-[#FAF7F2] border border-[#EBE5DC]">
+        <p class="font-serif text-base font-semibold text-zinc-800">
+          "What is one small thing I did recently without noticing that made you feel peaceful or loved?"
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-2xl bg-white border border-zinc-200 space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold text-zinc-900">
+            <span>Your Answer (Rahul)</span>
+            <span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+              <i data-lucide="check-circle" class="w-3 h-3"></i> Locked & Sealed
+            </span>
+          </div>
+          <p class="text-xs text-zinc-700 italic font-medium leading-relaxed">
+            "Making coffee together on Sunday mornings when there's no rush to be anywhere."
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold text-rose-950">
+            <span>Ananya's Answer</span>
+            <span class="text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">Revealed</span>
+          </div>
+          <p class="text-xs text-rose-950 italic font-serif leading-relaxed">
+            "When you noticed I had a headache and brought me ginger chai with a quiet forehead kiss."
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       CONCEPT 2: TWILIGHT LUXURY & DARK ROMANCE (CouplesGPT / Midnight Intimacy)
+       Deep obsidian velvet, glowing rose & champagne borders, candlelit bistro photos
+       ========================================================================= -->
+  <section id="concept-2" class="max-w-7xl mx-auto bg-gradient-to-br from-[#120B18] via-[#1A1024] to-[#0A060E] rounded-[40px] p-6 sm:p-12 border border-rose-900/40 shadow-2xl text-white space-y-10 glow-rose">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-widest text-rose-300 bg-rose-500/20 px-3 py-1 rounded-full border border-rose-500/30">
+          Design Concept 2
+        </span>
+        <h2 class="text-2xl sm:text-4xl font-serif font-bold text-white mt-2">
+          Twilight Luxury & Dark Romance
+        </h2>
+        <p class="text-xs sm:text-sm text-zinc-400 mt-0.5">
+          Sleek, intimate, evening ambiance with glowing neon-soft rose borders, candlelit photography, and evidence-based AI.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div class="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs font-bold flex items-center gap-1.5">
+          <i data-lucide="flame" class="w-3.5 h-3.5 fill-amber-400 text-amber-400"></i>
+          <span>5-Day Flame</span>
+        </div>
+        <div class="px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-400/40 text-rose-200 text-xs font-bold flex items-center gap-1.5">
+          <i data-lucide="heart" class="w-3.5 h-3.5 fill-rose-400 text-rose-400"></i>
+          <span>92% Heart Sync</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Luxury Hero with Candlelit Bistro Photo -->
+    <div class="relative rounded-3xl overflow-hidden min-h-[380px] flex items-center p-6 sm:p-12 border border-white/10">
+      <img src="/images/couple_date_night.jpg" alt="Candlelit Terrace Dinner" class="absolute inset-0 w-full h-full object-cover opacity-40 filter saturate-120" />
+      <div class="absolute inset-0 bg-gradient-to-r from-[#0C0612]/95 via-[#120B18]/85 to-transparent"></div>
+
+      <div class="relative z-10 max-w-xl space-y-4">
+        <span class="text-xs font-bold text-rose-400 uppercase tracking-widest">CouplesGPT Relationship Intelligence</span>
+        <h3 class="text-3xl sm:text-5xl font-serif font-bold text-white leading-tight">
+          Love isn't a problem to solve. It's an experience to deepen.
+        </h3>
+        <p class="text-xs sm:text-sm text-zinc-300 leading-relaxed">
+          Grounded in Dr. John Gottman's research on the 69% perpetual problems rule and the 5:1 ratio of emotional warmth.
+        </p>
+
+        <div class="pt-2 flex flex-wrap items-center gap-3">
+          <button class="px-6 py-3 rounded-xl bg-gradient-to-r from-rose-600 via-pink-600 to-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-900/50 flex items-center gap-2">
+            <span>Explore Relationship OS</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+          <button class="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs font-semibold backdrop-blur-md">
+            <span>De-escalate a Disagreement</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Research Cards Inspired by CouplesGPT -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="p-6 rounded-2xl glass-dark border border-white/10 space-y-2">
+        <div class="flex items-center justify-between text-xs text-rose-400 font-bold">
+          <span>The 69% Rule</span>
+          <span class="text-zinc-500">Gottman Science</span>
+        </div>
+        <h4 class="font-serif font-bold text-sm text-white">Perpetual vs. Solvable Conflicts</h4>
+        <p class="text-xs text-zinc-400 leading-relaxed">
+          69% of couples' recurring arguments are unresolvable differences in temperaments. Managing with humor beats fighting to "fix".
+        </p>
+      </div>
+
+      <div class="p-6 rounded-2xl glass-dark border border-white/10 space-y-2">
+        <div class="flex items-center justify-between text-xs text-rose-400 font-bold">
+          <span>The Repair Attempt</span>
+          <span class="text-zinc-500">Key Predictor</span>
+        </div>
+        <h4 class="font-serif font-bold text-sm text-white">The #1 Skill for Longevity</h4>
+        <p class="text-xs text-zinc-400 leading-relaxed">
+          The ability to throw a playful joke, a gentle touch, or a 90-second timeout before adrenaline causes emotional flooding.
+        </p>
+      </div>
+
+      <div class="p-6 rounded-2xl glass-dark border border-white/10 space-y-2">
+        <div class="flex items-center justify-between text-xs text-rose-400 font-bold">
+          <span>5:1 Emotional Bank</span>
+          <span class="text-zinc-500">Daily Balance</span>
+        </div>
+        <h4 class="font-serif font-bold text-sm text-white">Micro-Deposits of Affection</h4>
+        <p class="text-xs text-zinc-400 leading-relaxed">
+          5 positive daily micro-moments are required to cushion every 1 moment of friction.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       CONCEPT 3: VIBRANT EVERYDAY HABIT HUB (Paired / Locket Style)
+       Playful, social, 3-min games, mood battery orbits, daily questions & real photo stories
+       ========================================================================= -->
+  <section id="concept-3" class="max-w-7xl mx-auto bg-white rounded-[40px] p-6 sm:p-12 border border-zinc-200/90 shadow-xl space-y-10">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-100">
+      <div>
+        <span class="text-xs font-bold uppercase tracking-widest text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
+          Design Concept 3
+        </span>
+        <h2 class="text-2xl sm:text-4xl font-serif font-bold text-zinc-950 mt-2">
+          Vibrant Everyday Habit Hub
+        </h2>
+        <p class="text-xs sm:text-sm text-zinc-500 mt-0.5">
+          Paired & Couply style: Playful daily games, swipeable cards, emotional battery sync, and vibrant couple challenges.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button class="px-4 py-2 bg-rose-50 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 flex items-center gap-2">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-600"></i>
+          <span>Send Heartbeat Ping</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3 Core Interactive Daily Modules -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Module 1: 3-Minute Mini Game -->
+      <div class="p-6 rounded-3xl bg-zinc-50 border border-zinc-200/80 flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100/70 px-2.5 py-1 rounded-full">
+              🎲 3-Min Daily Game
+            </span>
+            <span class="text-xs font-bold text-zinc-400">Card #128</span>
+          </div>
+
+          <h4 class="font-serif font-bold text-zinc-900 text-base">Would you rather...</h4>
+
+          <div class="space-y-2 pt-1">
+            <div class="p-3 rounded-xl bg-white border border-zinc-200 text-xs font-semibold text-zinc-700 hover:border-rose-400 cursor-pointer">
+              A) Spontaneous weekend road trip with zero itinerary
+            </div>
+            <div class="p-3 rounded-xl bg-rose-50 border border-rose-400 text-xs font-bold text-rose-900 shadow-sm">
+              B) Cozy candlelit homemade dinner with vinyl records (You & Ananya both picked this! ✨)
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-zinc-200/60 flex items-center justify-between text-xs font-bold text-rose-600">
+          <span>+10 Love Points Earned</span>
+          <span>Next card →</span>
+        </div>
+      </div>
+
+      <!-- Module 2: Emotional Battery / Mood Orbit -->
+      <div class="p-6 rounded-3xl bg-zinc-50 border border-zinc-200/80 flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-100/70 px-2.5 py-1 rounded-full">
+              💓 Emotional Battery
+            </span>
+            <span class="text-xs font-bold text-emerald-600">● Both Synced</span>
+          </div>
+
+          <h4 class="font-serif font-bold text-zinc-900 text-base">How are you feeling today?</h4>
+
+          <div class="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+            <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-400 text-rose-900 font-bold">
+              🥰 Cozy & Connected
+            </div>
+            <div class="p-2.5 rounded-xl bg-white border border-zinc-200 text-zinc-600 font-medium">
+              🫂 Need Extra Hugs
+            </div>
+            <div class="p-2.5 rounded-xl bg-white border border-zinc-200 text-zinc-600 font-medium">
+              ✨ Playful & Cheeky
+            </div>
+            <div class="p-2.5 rounded-xl bg-white border border-zinc-200 text-zinc-600 font-medium">
+              🌙 Work Stress / Quiet
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-zinc-200/60 text-xs text-zinc-500">
+          Ananya is feeling: <strong class="text-zinc-900 font-bold">Cozy & Connected (85%)</strong>
+        </div>
+      </div>
+
+      <!-- Module 3: Daily Love Drop Audio Insight -->
+      <div class="p-6 rounded-3xl bg-zinc-50 border border-zinc-200/80 flex flex-col justify-between space-y-4">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-100/70 px-2.5 py-1 rounded-full">
+              💡 Daily Love Drop
+            </span>
+            <span class="text-xs font-bold text-zinc-500">Hinglish / English</span>
+          </div>
+
+          <h4 class="font-serif font-bold text-zinc-900 text-base">
+            "Before replying when emotions are high, take 90 seconds."
+          </h4>
+          <p class="text-xs text-zinc-500 leading-relaxed">
+            "Argument jeetne ke chakkar mein connection mat khona." A 90-second pause protects the bond.
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-zinc-200/60 flex items-center justify-between text-xs font-bold text-rose-600">
+          <div class="flex items-center gap-1.5 text-zinc-800">
+            <i data-lucide="volume-2" class="w-4 h-4 text-rose-600"></i>
+            <span>Listen (30s Voice Note)</span>
+          </div>
+          <span>Mark as Read</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Real Photo Gallery Carousel Strip -->
+    <div class="pt-4">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="font-serif font-bold text-lg text-zinc-900">Real Couple Moments In Real Life</h4>
+        <span class="text-xs font-semibold text-rose-600">Over 10,000+ active couples</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <div class="rounded-2xl overflow-hidden border border-zinc-200 shadow-sm bg-white group">
+          <img src="/images/couple_cozy_talk.jpg" alt="Cozy talk" class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
+          <div class="p-4 space-y-1">
+            <div class="text-[11px] font-bold text-rose-600">Communication Breakthrough</div>
+            <div class="text-xs font-bold text-zinc-900">"We talk through difficult things without fear now."</div>
+            <div class="text-[10px] text-zinc-400">Meera & Kabir • Mumbai</div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl overflow-hidden border border-zinc-200 shadow-sm bg-white group">
+          <img src="/images/couple_hero.jpg" alt="Golden hour embrace" class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
+          <div class="p-4 space-y-1">
+            <div class="text-[11px] font-bold text-rose-600">Daily Morning Ritual</div>
+            <div class="text-xs font-bold text-zinc-900">"The sealed questions give us butterflies every morning."</div>
+            <div class="text-[10px] text-zinc-400">Priya & Arjun • Delhi</div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl overflow-hidden border border-zinc-200 shadow-sm bg-white group">
+          <img src="/images/couple_date_night.jpg" alt="Terrace date" class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
+          <div class="p-4 space-y-1">
+            <div class="text-[11px] font-bold text-rose-600">Anniversary Memories</div>
+            <div class="text-xs font-bold text-zinc-900">"Our 3rd anniversary date was planned in 5 minutes."</div>
+            <div class="text-[10px] text-zinc-400">Rhea & Tushar • Pune</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Voting / Feedback Section -->
+  <footer class="max-w-4xl mx-auto p-8 rounded-3xl bg-white border border-zinc-200 text-center space-y-4 shadow-sm">
+    <h3 class="font-serif font-bold text-xl text-zinc-900">Which Design Direction Feels Best to You?</h3>
+    <p class="text-xs text-zinc-500 max-w-md mx-auto">
+      Tell us which concept you like most (Concept 1: Warm Editorial, Concept 2: Twilight Luxury, or Concept 3: Vibrant Everyday), and we'll apply it across every screen and component!
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+      <span class="px-4 py-2 rounded-xl bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">
+        Concept 1: Warm Editorial Sanctuary
+      </span>
+      <span class="px-4 py-2 rounded-xl bg-zinc-900 text-white text-xs font-bold">
+        Concept 2: Twilight Luxury
+      </span>
+      <span class="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold">
+        Concept 3: Vibrant Habit Hub
+      </span>
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>
