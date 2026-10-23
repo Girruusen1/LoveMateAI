@@ -394,22 +394,6 @@ function readJSON<T>(key: string, fallback: T): T {
   }
 }
 const todayKey = () => new Date().toISOString().slice(0, 10);
-const DEMO_USER: User = {
-  id: 'usr_demo_1',
-  name: 'Rahul',
-  email: 'rahul@lovemate.ai',
-  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop&crop=faces',
-  streak: 5,
-  points: 380,
-  xp: 1250,
-  isPro: false,
-  vibe: 'Romantic & Playful',
-  preferredLanguage: 'hinglish',
-  joinedAt: 'Oct 2026',
-  goals: ['Crush', 'Need conversation help', 'Check Compatibility'],
-  partnerName: 'Ananya',
-  partnerConnected: true,
-};
 
 // V3 Storage Keys
 const STORAGE_KEY_USER_MEMORIES = 'lovemate_user_memories_v3';
@@ -460,9 +444,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return null;
       }
     }
-    // Demo account only on the very first visit; after a logout or delete, stay logged out.
-    if (localStorage.getItem(STORAGE_KEY_SESSION) === 'signed_out') return null;
-    return DEMO_USER;
+    // New visitors see the landing page and sign up; there is no automatic sample account.
+    return null;
   });
 
   const [activeTab, setActiveTabState] = useState<ActiveTab>(() => hashToTab(window.location.hash) ?? 'home');
