@@ -357,9 +357,11 @@ export const AuthModal: React.FC = () => {
                   {cloudEnabled ? 'Continue with Google' : 'Continue with Google (demo)'}
                 </button>
 
-                <button type="button" onClick={handleGuest} className="w-full text-center text-[11px] text-zinc-500 hover:text-zinc-800 transition-colors pt-1">
-                  Explore as a guest
-                </button>
+                {!cloudEnabled && (
+                  <button type="button" onClick={handleGuest} className="w-full text-center text-[11px] text-zinc-500 hover:text-zinc-800 transition-colors pt-1">
+                    Explore as a guest
+                  </button>
+                )}
               </>
             )}
 

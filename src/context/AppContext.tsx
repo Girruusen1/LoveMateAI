@@ -497,7 +497,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<User | null>(() => {
     const saved = readJSON<User | null>(STORAGE_KEY_USER, null);
     const account = cloudAccount();
-    if (!account) return saved;
+    // With cloud accounts only a real session counts as signed in. The old automatic sample user never does.
+    if (!account) return cloudEnabled || saved?.id === 'usr_demo_1' ? null : saved;
     // Signed in to the cloud: the profile belongs to the account, and the partner link comes from the database.
     const couple = cloudCouple();
     const base = saved?.id === account.id ? saved : newUserRecord(account.name, account.email, account.id);
