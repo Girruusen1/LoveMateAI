@@ -72,7 +72,7 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({ entitlement, flag, adm
       <Notice
         icon={<Lock />}
         title={`Sign in to use ${featureName}`}
-        body="Your saved items, memories and plans are tied to your account."
+        body="Create a free account to use all of LoveMate's AI tools. Your chats, saved items and plans stay private to you."
         action={
           <>
             <Button variant="secondary" onClick={() => openAuthModal('login')}>Sign in</Button>

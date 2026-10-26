@@ -27,7 +27,7 @@ import { RelationshipCheckInView } from './components/health/RelationshipCheckIn
 import { PersonalizedDashboard } from './components/home/PersonalizedDashboard';
 import { Footer } from './components/layout/Footer';
 import { MobileNav } from './components/layout/MobileNav';
-import { Navbar } from './components/layout/Navbar';
+import { EXPLORE_GROUPS, Navbar } from './components/layout/Navbar';
 import { SavedLibraryView } from './components/library/SavedLibraryView';
 import { MemoryCenterView } from './components/memory/MemoryCenterView';
 import { AuthModal } from './components/modals/AuthModal';
@@ -81,41 +81,28 @@ const LogoModalHost: React.FC = () => {
   return <LogoShowcaseModal isOpen={logoModalOpen} onClose={() => setLogoModalOpen(false)} />;
 };
 
-/** Pages built on the user's own or the couple's data. Visitors are asked to sign in instead; the AI tools stay open to try. */
-const ACCOUNT_PAGES: Partial<Record<ActiveTab, string>> = {
-  'our-space': 'Our Space',
-  'couple-mode': 'Couple room',
-  'couple-coach': 'Couples coach',
-  'long-distance': 'Long distance',
-  timeline: 'Timeline',
-  'important-dates': 'Important dates',
-  'trip-together': 'Trip together',
-  wrapped: 'Your Wrapped',
-  'memory-center': 'Memory center',
-  'relationship-dashboard': 'Relationship dashboard',
-  'relationship-patterns': 'Relationship patterns',
-  'relationship-dna': 'Relationship DNA',
-  'health-check': 'Relationship check-in',
-  'our-story': 'Our story',
-  scrapbook: 'Scrapbook',
-  'our-story-movie': 'Our story movie',
-  challenges: 'Challenges',
+/** Pages anyone can open. Every tool needs a free account (the landing page has a live demo to try first). */
+const PUBLIC_PAGES = new Set<ActiveTab>(['home', 'pro', 'trust-center', 'support']);
+
+/** Names for the sign-in prompt, taken from the menu. */
+const PAGE_NAMES: Partial<Record<ActiveTab, string>> = {
+  ...Object.fromEntries(EXPLORE_GROUPS.flatMap((g) => g.items.map((i) => [i.tab, i.label]))),
+  chat: 'AI chat',
   copilot: 'Ask LoveMate',
-  'agent-activity': 'Agent activity',
-  autopilot: 'Autopilot',
+  'our-space': 'Our Space',
   'couple-calendar': 'Couple calendar',
-  wishlist: 'Wishlist',
+  library: 'Saved library',
+  profile: 'Profile',
   referrals: 'Invite friends',
 };
 
 const MainContent: React.FC = () => {
   const { activeTab, user } = useApp();
 
-  const accountPage = ACCOUNT_PAGES[activeTab];
-  if (!user && accountPage) {
+  if (!user && !PUBLIC_PAGES.has(activeTab)) {
     return (
       <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <FeatureGate requireAuth featureName={accountPage}>
+        <FeatureGate requireAuth featureName={PAGE_NAMES[activeTab] ?? 'LoveMate'}>
           {null}
         </FeatureGate>
       </main>
