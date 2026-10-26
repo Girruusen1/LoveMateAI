@@ -2,8 +2,11 @@
  * Razorpay subscriptions. Framework-free (node:http), mounted next to the GenAI gateway.
  *
  *   GET  /api/pay/status      -> { enabled, keyId }
- *   POST /api/pay/subscribe   -> { subscriptionId, keyId }   (signed-in user; body { plan, cycle })
+ *   POST /api/pay/subscribe   -> { subscriptionId, keyId } or { orderId, amount, keyId }   (signed-in user; body { plan, cycle })
  *   POST /api/pay/verify      -> { plan, status, currentEnd } (after checkout; checks Razorpay's signature)
+ *
+ * Auto-renewing subscriptions need Razorpay's Subscriptions product. Until it is switched on for the account,
+ * checkout falls back to a one-time payment for one month or one year (a "prepaid" plan, no auto-renewal).
  *   POST /api/pay/cancel      -> { status }                   (stops renewal; access lasts until the period ends)
  *   POST /api/pay/webhook     <- Razorpay events (renewals, failures, cancellations)
  *
@@ -38,6 +41,9 @@ export const paymentsEnabled = () => {
   const c = cfg();
   return Boolean(c.keyId && c.keySecret && c.supabaseUrl && c.supabaseSecret);
 };
+
+/** Razorpay answers 401 on /plans and /subscriptions while the Subscriptions product is off for the account. */
+class SubscriptionsUnavailable extends Error {}
 
 class PayError extends Error {
   status: number;
@@ -84,6 +90,7 @@ async function razorpay<T>(method: string, path: string, body?: unknown): Promis
     body: body ? JSON.stringify(body) : undefined,
   });
   const json = (await res.json().catch(() => ({}))) as T & { error?: { description?: string } };
+  if (res.status === 401 && /^\/(plans|subscriptions)/.test(path)) throw new SubscriptionsUnavailable();
   if (!res.ok) {
     console.error(`[pay] Razorpay ${method} ${path} -> ${res.status}: ${json.error?.description ?? ''}`);
     throw new PayError(502, 'The payment service had a problem. Please try again.');
@@ -97,6 +104,13 @@ interface RzpPlan {
   interval: number;
   item: { name: string; amount: number; currency: string };
 }
+interface RzpOrder {
+  id: string;
+  amount: number;
+  amount_paid: number;
+  status: string;
+  notes?: Record<string, string>;
+}
 interface RzpSubscription {
   id: string;
   plan_id: string;
@@ -109,6 +123,7 @@ const planName = (plan: PaidPlan, cycle: Cycle) => `LoveMate ${plan === 'plus' ?
 
 /** Finds the Razorpay plan for this price, creating it the first time, so nothing has to be set up by hand. */
 const planCache = new Map<string, string>();
+let subscriptionsAvailable = true;
 async function razorpayPlanId(plan: PaidPlan, cycle: Cycle): Promise<string> {
   const key = `${plan}:${cycle}`;
   const cached = planCache.get(key);
@@ -151,7 +166,15 @@ interface SubscriptionRow {
   cycle: Cycle;
   status: string;
   current_end: string | null;
+  /** Subscription id, or the order id for a prepaid plan. */
   razorpay_subscription_id: string;
+}
+
+async function currentRow(userId: string): Promise<SubscriptionRow | null> {
+  const res = await fetch(`${cfg().supabaseUrl}/rest/v1/subscriptions?user_id=eq.${encodeURIComponent(userId)}&select=*`, { headers: adminHeaders() });
+  if (!res.ok) return null;
+  const rows = (await res.json()) as SubscriptionRow[];
+  return rows[0] ?? null;
 }
 
 async function saveSubscription(row: SubscriptionRow) {
@@ -229,13 +252,62 @@ export async function handlePayments(req: IncomingMessage, res: ServerResponse):
       const plan = body.plan === 'couple' ? 'couple' : body.plan === 'plus' ? 'plus' : null;
       const cycle = body.cycle === 'yearly' ? 'yearly' : body.cycle === 'monthly' ? 'monthly' : null;
       if (!plan || !cycle) throw new PayError(400, 'Choose a plan and billing cycle.');
-      const sub = await razorpay<RzpSubscription>('POST', '/subscriptions', {
-        plan_id: await razorpayPlanId(plan, cycle),
-        total_count: TOTAL_COUNT[cycle],
-        customer_notify: 1,
-        notes: { user_id: user.id, email: user.email, plan, cycle },
+      const notes = { user_id: user.id, email: user.email, plan, cycle };
+      if (subscriptionsAvailable) {
+        try {
+          const sub = await razorpay<RzpSubscription>('POST', '/subscriptions', {
+            plan_id: await razorpayPlanId(plan, cycle),
+            total_count: TOTAL_COUNT[cycle],
+            customer_notify: 1,
+            notes,
+          });
+          send(res, 200, { subscriptionId: sub.id, keyId: cfg().keyId });
+          return true;
+        } catch (e) {
+          if (!(e instanceof SubscriptionsUnavailable)) throw e;
+          subscriptionsAvailable = false;
+          console.warn('[pay] Razorpay Subscriptions is not enabled for this account; using one-time payments.');
+        }
+      }
+      const order = await razorpay<RzpOrder>('POST', '/orders', {
+        amount: PRICES[plan][cycle],
+        currency: 'INR',
+        receipt: `lm_${user.id.slice(0, 8)}_${Date.now()}`,
+        notes,
       });
-      send(res, 200, { subscriptionId: sub.id, keyId: cfg().keyId });
+      send(res, 200, { orderId: order.id, amount: order.amount, keyId: cfg().keyId });
+      return true;
+    }
+
+    if (route === 'verify' && body.razorpay_order_id) {
+      // One-time (prepaid) payment: Razorpay signs "order_id|payment_id".
+      const orderId = String(body.razorpay_order_id);
+      const paymentId = String(body.razorpay_payment_id ?? '');
+      if (!paymentId || !sameSignature(hmac(cfg().keySecret, `${orderId}|${paymentId}`), body.razorpay_signature)) {
+        throw new PayError(400, 'We could not verify this payment. If money was taken, contact support with your payment ID.');
+      }
+      const order = await razorpay<RzpOrder>('GET', `/orders/${encodeURIComponent(orderId)}`);
+      if (order.notes?.user_id !== user.id) throw new PayError(403, 'This payment belongs to another account.');
+      const plan = order.notes.plan as PaidPlan;
+      const cycle = order.notes.cycle as Cycle;
+      // Paying again before the plan ends adds the new period on top.
+      const existing = await currentRow(user.id);
+      if (existing?.razorpay_subscription_id === orderId) {
+        send(res, 200, { plan: existing.plan, status: existing.status, currentEnd: existing.current_end });
+        return true;
+      }
+      const from = Math.max(Date.now(), existing?.current_end ? Date.parse(existing.current_end) : 0);
+      const days = cycle === 'yearly' ? 365 : 30;
+      const row: SubscriptionRow = {
+        user_id: user.id,
+        plan,
+        cycle,
+        status: 'prepaid',
+        current_end: new Date(from + days * 86_400_000).toISOString(),
+        razorpay_subscription_id: orderId,
+      };
+      await saveSubscription(row);
+      send(res, 200, { plan: row.plan, status: row.status, currentEnd: row.current_end });
       return true;
     }
 

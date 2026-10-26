@@ -205,7 +205,9 @@ export const ProModal: React.FC = () => {
               </span>
             </div>
             {paymentsLive ? (
-              paidSubscription && paidSubscription.status === 'cancelling' ? (
+              paidSubscription && paidSubscription.status === 'prepaid' ? (
+                <span className="text-xs font-bold text-emerald-700">{endDate ? `Paid until ${endDate}` : 'Paid'}</span>
+              ) : paidSubscription && paidSubscription.status === 'cancelling' ? (
                 <span className="text-xs font-bold text-amber-700">Renewal off{endDate ? ` · active until ${endDate}` : ''}</span>
               ) : (
                 paidSubscription &&

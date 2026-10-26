@@ -35,7 +35,8 @@ async function api<T>(path: string, body: unknown): Promise<T> {
 
 interface RazorpayResponse {
   razorpay_payment_id: string;
-  razorpay_subscription_id: string;
+  razorpay_subscription_id?: string;
+  razorpay_order_id?: string;
   razorpay_signature: string;
 }
 interface RazorpayCheckout {
@@ -67,14 +68,15 @@ function loadCheckoutScript(): Promise<void> {
 /** Opens Razorpay for the plan and resolves once the payment is verified by the server (or cancelled). */
 export async function checkout(plan: PaidPlan, cycle: Cycle, prefill: { name?: string; email?: string }): Promise<CheckoutResult> {
   try {
-    const [{ subscriptionId, keyId }] = await Promise.all([
-      api<{ subscriptionId: string; keyId: string }>('subscribe', { plan, cycle }),
+    // Auto-renewing subscription, or a one-time payment while Razorpay Subscriptions is off for the account.
+    const [{ subscriptionId, orderId, amount, keyId }] = await Promise.all([
+      api<{ subscriptionId?: string; orderId?: string; amount?: number; keyId: string }>('subscribe', { plan, cycle }),
       loadCheckoutScript(),
     ]);
     const response = await new Promise<RazorpayResponse | null>((resolve, reject) => {
       const rzp = new window.Razorpay!({
         key: keyId,
-        subscription_id: subscriptionId,
+        ...(subscriptionId ? { subscription_id: subscriptionId } : { order_id: orderId, amount, currency: 'INR' }),
         name: 'LoveMate',
         description: `LoveMate ${plan === 'plus' ? 'Plus' : 'Couple'} (${cycle})`,
         prefill: { name: prefill.name, email: prefill.email },

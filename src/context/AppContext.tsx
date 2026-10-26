@@ -996,7 +996,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [paymentsLive, setPaymentsLive] = useState(false);
   const [paid, setPaid] = useState(() => cloudPaidPlans());
   const paidActive = (r: PaidSubscription | null): r is PaidSubscription =>
-    !!r && ['active', 'cancelling', 'past_due'].includes(r.status) && (!r.current_end || Date.parse(r.current_end) > Date.now());
+    !!r && ['active', 'cancelling', 'past_due', 'prepaid'].includes(r.status) && (!r.current_end || Date.parse(r.current_end) > Date.now());
   const trialPlan: Plan = userSubscription.status === 'trialing' && !trialExpired ? 'plus' : 'free';
   const ownPlan: Plan = paymentsLive
     ? paidActive(paid.mine) ? (PLAN_RANK[paid.mine.plan] >= PLAN_RANK[trialPlan] ? paid.mine.plan : trialPlan) : trialPlan
