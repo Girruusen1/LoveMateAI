@@ -3,38 +3,21 @@ import confetti from 'canvas-confetti';
 import {
   GROWTH_CHALLENGES,
   INITIAL_ADMIN_METRICS,
-  INITIAL_AGENT_TASKS,
   INITIAL_AI_EVALUATION_CASES,
   INITIAL_AI_MODELS,
   INITIAL_AUTOPILOT_SETTINGS,
   INITIAL_BADGES,
-  INITIAL_CALENDAR_EVENTS,
-  INITIAL_COUPLE_JOURNAL,
   INITIAL_EXPERIMENTS,
   INITIAL_FEATURE_FLAGS,
   INITIAL_GLOBALIZATION,
-  INITIAL_GOALS_V2,
-  INITIAL_IMPORTANT_DATES,
   INITIAL_LOVEMATE_PROFILE,
   INITIAL_MARKETPLACE_EXPERIENCES,
-  INITIAL_MEMORY_CONTRADICTIONS,
   INITIAL_MEMORY_SETTINGS,
   INITIAL_PROACTIVE_SETTINGS,
-  INITIAL_PROACTIVE_SUGGESTIONS,
   INITIAL_PROMPT_VERSIONS,
   INITIAL_REFERRAL_STATS,
-  INITIAL_RELATIONSHIP_PATTERNS,
-  INITIAL_RELATIONSHIP_TRENDS,
-  INITIAL_SHARED_GOALS,
-  INITIAL_SHARED_MEMORIES,
-  INITIAL_SHARED_PLANS,
-  INITIAL_SMART_NOTIFICATIONS,
-  INITIAL_SUPPORT_TICKETS,
-  INITIAL_TIMELINE_MILESTONES,
   INITIAL_UNIT_ECONOMICS,
-  INITIAL_USER_MEMORIES,
   INITIAL_USER_SUBSCRIPTION_V5,
-  INITIAL_WISHLIST,
   INITIAL_WRAPPED,
 } from '../data/seedData';
 import {
@@ -102,6 +85,24 @@ import { AI_ERROR_EVENT, getGenAIStatus } from '../services/genaiClient';
 import { uid } from '../utils/uid';
 import { hashToTab, tabToHash } from '../utils/routes';
 import { hashPassword, loadAccounts, saveAccounts, type LocalAccount } from '../utils/accounts';
+import {
+  cloudAccount,
+  cloudCouple,
+  cloudCreateCouple,
+  cloudDeleteAccount,
+  cloudEnabled,
+  cloudIsNewAccount,
+  cloudJoinCouple,
+  cloudLeaveCouple,
+  cloudSignIn,
+  cloudSignOut,
+  cloudSignUp,
+  onPartnerJoined,
+  onSharedChange,
+  takePasswordRecovery,
+  type CloudCouple,
+  type CoupleError,
+} from '../services/cloud';
 
 interface AppContextType {
   user: User | null;
@@ -109,13 +110,16 @@ interface AppContextType {
   setActiveTab: (tab: ActiveTab) => void;
   // Auth & Onboarding
   authModalOpen: boolean;
-  authModalMode: 'login' | 'signup' | 'forgot' | 'verify';
-  openAuthModal: (mode?: 'login' | 'signup' | 'forgot' | 'verify') => void;
+  authModalMode: AuthModalMode;
+  openAuthModal: (mode?: AuthModalMode) => void;
   closeAuthModal: () => void;
   onboardingOpen: boolean;
   setOnboardingOpen: (open: boolean) => void;
-  login: (email: string, options?: { password?: string; name?: string; provider?: 'google' | 'otp' }) => Promise<'ok' | 'no_account' | 'wrong_password'>;
-  signup: (name: string, email: string, password: string) => Promise<'ok' | 'exists'>;
+  login: (
+    email: string,
+    options?: { password?: string; name?: string; provider?: 'google' | 'otp' }
+  ) => Promise<'ok' | 'no_account' | 'wrong_password' | 'not_confirmed' | 'error'>;
+  signup: (name: string, email: string, password: string) => Promise<'ok' | 'exists' | 'confirm_email' | 'error'>;
   setPasswordForEmail: (email: string, password: string) => Promise<boolean>;
   accountExists: (email: string) => boolean;
   logout: () => void;
@@ -395,6 +399,60 @@ function readJSON<T>(key: string, fallback: T): T {
 }
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
+export type AuthModalMode = 'login' | 'signup' | 'forgot' | 'verify' | 'reset';
+
+const newUserRecord = (name: string, email: string, id: string = uid('usr')): User => ({
+  id,
+  name,
+  email,
+  streak: 1,
+  points: 100,
+  xp: 250,
+  isPro: false,
+  vibe: 'Cute & Friendly',
+  preferredLanguage: 'hinglish',
+  joinedAt: new Date().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
+  goals: ['Crush'],
+  partnerName: undefined,
+  partnerConnected: false,
+});
+
+/** A message (and whether to open onboarding) shown after the page reloads, e.g. after a cloud sign-in. */
+const FLASH_KEY = 'lovemate_flash_v1';
+/** A partner invite opened while signed out, joined right after sign-in. */
+const PENDING_ROOM_KEY = 'lovemate_pending_room_v1';
+const ROOM_CODE_RE = /^LOVE-[A-Z0-9]{4,8}$/;
+
+function reloadWith(message: string, options: { onboarding?: boolean; home?: boolean } = {}) {
+  try {
+    sessionStorage.setItem(FLASH_KEY, JSON.stringify({ message, onboarding: !!options.onboarding }));
+  } catch {
+    /* private mode: the message is skipped */
+  }
+  if (options.home) window.location.replace(window.location.pathname);
+  else window.location.reload();
+}
+
+const COUPLE_ERRORS: Record<CoupleError, string> = {
+  invalid_code: "That code didn't work. It may be mistyped, already used, or older than 7 days.",
+  own_code: "That's your own invite code. Share it with your partner instead.",
+  already_connected: 'You are already linked with a partner. Leave that space first.',
+  couple_full: 'That couple space already has two people.',
+  error: 'Could not reach the server. Check your connection and try again.',
+};
+
+/** The couple room as the screens know it, built from the partner link stored in the cloud. */
+const cloudRoom = (c: CloudCouple, myName: string, saved: CoupleRoom | null): CoupleRoom => ({
+  id: c.id,
+  roomCode: c.inviteCode ?? saved?.roomCode ?? 'LINKED',
+  creatorName: c.createdByMe ? myName : c.partnerName ?? 'Partner',
+  partnerName: c.createdByMe ? c.partnerName ?? undefined : myName,
+  status: c.partnerName ? 'connected' : 'waiting',
+  activityType: saved?.activityType ?? 'know_me_better',
+  createdAt: saved?.createdAt ?? 'Just now',
+  expiresAt: c.partnerName ? 'Linked' : 'In 7 days',
+});
+
 // V3 Storage Keys
 const STORAGE_KEY_USER_MEMORIES = 'lovemate_user_memories_v3';
 const STORAGE_KEY_MEMORY_SETTINGS = 'lovemate_memory_settings_v3';
@@ -435,17 +493,20 @@ const STORAGE_KEY_GLOBALIZATION = 'lovemate_globalization_v5';
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   // 1. User state
+  // New visitors see the landing page and sign up; there is no automatic sample account.
   const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_USER);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return null;
-      }
-    }
-    // New visitors see the landing page and sign up; there is no automatic sample account.
-    return null;
+    const saved = readJSON<User | null>(STORAGE_KEY_USER, null);
+    const account = cloudAccount();
+    if (!account) return saved;
+    // Signed in to the cloud: the profile belongs to the account, and the partner link comes from the database.
+    const couple = cloudCouple();
+    const base = saved?.id === account.id ? saved : newUserRecord(account.name, account.email, account.id);
+    return {
+      ...base,
+      email: account.email,
+      partnerConnected: !!couple?.partnerName,
+      partnerName: couple?.partnerName ?? base.partnerName,
+    };
   });
 
   const [activeTab, setActiveTabState] = useState<ActiveTab>(() => hashToTab(window.location.hash) ?? 'home');
@@ -464,7 +525,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
   const [pendingCopilotPrompt, setPendingCopilotPrompt] = useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot' | 'verify'>('login');
+  const [authModalMode, setAuthModalMode] = useState<AuthModalMode>('login');
   const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   // 2. Modals
@@ -478,7 +539,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   } | null>(null);
 
   // 3. Badges
-  const [badges, setBadges] = useState<Badge[]>(() => readJSON<Badge[]>(STORAGE_KEY_BADGES, INITIAL_BADGES));
+  const [badges, setBadges] = useState<Badge[]>(() => readJSON<Badge[]>(STORAGE_KEY_BADGES, INITIAL_BADGES.map((b) => ({ ...b, unlocked: false, unlockedAt: undefined }))));
 
   // 4. AI Memories
   const [aiMemoryEnabled, setAiMemoryEnabled] = useState<boolean>(() => readJSON<boolean>(STORAGE_KEY_AI_MEMORY_ENABLED, true));
@@ -489,20 +550,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return [
-      {
-        id: 'mem_1',
-        fact: "Crush/Partner is Ananya (met at Third Wave coffee)",
-        category: 'crush',
-        dateLearned: '2 days ago',
-      },
-      {
-        id: 'mem_2',
-        fact: 'Prefers witty, subtle banter and screen-free coffee walks',
-        category: 'preference',
-        dateLearned: '3 days ago',
-      },
-    ];
+    return [];
   });
 
   // 5. Saved Library Items
@@ -513,18 +561,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return [
-      {
-        id: 'conf_seed_1',
-        recipient: 'Crush',
-        tone: 'Cute',
-        language: 'hinglish',
-        length: 'short',
-        content: `Hey! Main bas itna kehna chahta hu ki jab bhi tera text aata hai na, mere chehre par ek silly si smile aa jati hai. You kind of make my ordinary days a lot brighter ❤️`,
-        createdAt: 'Yesterday',
-        favorite: true,
-      },
-    ];
+    return [];
   });
 
   const [savedCompatibility, setSavedCompatibility] = useState<CompatibilityResult[]>(() => {
@@ -534,25 +571,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return [
-      {
-        id: 'compat_seed_1',
-        yourName: 'Rahul',
-        theirName: 'Ananya',
-        relationshipType: 'Dating',
-        overallScore: 92,
-        breakdown: {
-          chemistry: 94,
-          communication: 88,
-          personality: 90,
-          emotionalConnection: 94,
-        },
-        aiAnalysis:
-          'Your communication energy flows naturally without anxiety. Shared subtle humor creates a strong foundation.',
-        verdict: 'Cosmic Connection & Electric Chemistry 🔥',
-        createdAt: 'Yesterday',
-      },
-    ];
+    return [];
   });
 
   const [savedStories, setSavedStories] = useState<LoveStory[]>(() => {
@@ -585,7 +604,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_TIMELINE_MILESTONES;
+    return [];
   });
 
   // 7. V2: Important Dates
@@ -596,7 +615,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_IMPORTANT_DATES;
+    return [];
   });
 
   // 8. V2: Growth Challenges
@@ -607,15 +626,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return GROWTH_CHALLENGES;
+    // The catalogue, with no progress yet.
+    return GROWTH_CHALLENGES.map((c) => ({ ...c, isStarted: false, days: c.days.map((d) => ({ ...d, completed: false })) }));
   });
 
   // 9. V2: Couple Rooms & Couple Streaks
-  const [coupleRoom, setCoupleRoom] = useState<CoupleRoom | null>(() => readJSON<CoupleRoom | null>(STORAGE_KEY_COUPLE_ROOM, null));
+  const [coupleRoom, setCoupleRoom] = useState<CoupleRoom | null>(() => {
+    const saved = readJSON<CoupleRoom | null>(STORAGE_KEY_COUPLE_ROOM, null);
+    const account = cloudAccount();
+    if (!account) return saved;
+    const couple = cloudCouple();
+    return couple ? cloudRoom(couple, readJSON<User | null>(STORAGE_KEY_USER, null)?.name || account.name, saved) : null;
+  });
 
   const [coupleStreak, setCoupleStreak] = useState<number>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_COUPLE_STREAK);
-    return saved ? parseInt(saved, 10) : 4;
+    return saved ? parseInt(saved, 10) : 0;
   });
 
   // 10. V2: Real Our Story & Love Cards
@@ -642,7 +668,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_USER_MEMORIES;
+    return [];
   });
 
   // 2. Memory Settings
@@ -664,7 +690,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_LOVEMATE_PROFILE;
+    return { ...INITIAL_LOVEMATE_PROFILE, favoriteActivities: [] };
   });
 
   const [adviceFeedbacks, setAdviceFeedbacks] = useState<AdviceFeedback[]>([]);
@@ -677,7 +703,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_RELATIONSHIP_PATTERNS;
+    return [];
   });
 
   const [relationshipTrends, setRelationshipTrends] = useState<RelationshipTrends>(() => {
@@ -687,11 +713,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_RELATIONSHIP_TRENDS;
+    // No scores until the user has done a check-in.
+    return {
+      communicationTrend: 'stable',
+      qualityTimeTrend: 'stable',
+      trustTrend: 'stable',
+      sharedActivitiesTrend: 'stable',
+      overallSnapshot: { emotionalConnection: 0, communication: 0, qualityTime: 0, sharedGoals: 0, fun: 0, trust: 0 },
+    };
   });
 
   // 5. Proactive AI
-  const [proactiveSuggestions, setProactiveSuggestions] = useState<ProactiveSuggestion[]>(INITIAL_PROACTIVE_SUGGESTIONS);
+  const [proactiveSuggestions, setProactiveSuggestions] = useState<ProactiveSuggestion[]>([]);
   const [proactiveSettings, setProactiveSettings] = useState<ProactiveSettings>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PROACTIVE_SETTINGS);
     if (saved) {
@@ -710,7 +743,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_SHARED_MEMORIES;
+    return [];
   });
 
   const [sharedGoals, setSharedGoals] = useState<SharedGoal[]>(() => {
@@ -720,7 +753,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_SHARED_GOALS;
+    return [];
   });
 
   const [sharedPlans, setSharedPlans] = useState<SharedPlanItem[]>(() => {
@@ -730,7 +763,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_SHARED_PLANS;
+    return [];
   });
 
   const [coupleJournal, setCoupleJournal] = useState<CoupleJournalEntry[]>(() => {
@@ -740,7 +773,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_COUPLE_JOURNAL;
+    return [];
   });
 
   const [longDistanceState, setLongDistanceState] = useState<LongDistanceState>(() => {
@@ -751,13 +784,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
     }
     return {
-      isEnabled: true,
-      yourCity: 'Mumbai',
+      isEnabled: false,
+      yourCity: '',
       yourTimezone: 'IST (UTC+5:30)',
-      partnerCity: 'Bangalore',
+      partnerCity: '',
       partnerTimezone: 'IST (UTC+5:30)',
-      nextMeetingDate: 'Nov 02, 2026',
-      milesApart: 615,
     };
   });
 
@@ -787,7 +818,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_SMART_NOTIFICATIONS;
+    return [];
   });
 
   const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
@@ -806,7 +837,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_AGENT_TASKS;
+    return [];
   });
 
   // 2. Autopilot
@@ -828,7 +859,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_CALENDAR_EVENTS;
+    return [];
   });
 
   // 4. Goals V2
@@ -839,7 +870,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_GOALS_V2;
+    return [];
   });
 
   // 5. Wishlist
@@ -850,7 +881,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_WISHLIST;
+    return [];
   });
 
   // 6. Marketplace Experiences
@@ -1090,7 +1121,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_MEMORY_CONTRADICTIONS;
+    return [];
   });
 
   const resolveContradiction = (id: string, resolution: string) => {
@@ -1108,7 +1139,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_REFERRAL_STATS;
+    return {
+      ...INITIAL_REFERRAL_STATS,
+      referralCode: 'LOVEMATE-' + uid('ref').slice(-5).toUpperCase(),
+      totalInvited: 0,
+      joinedCount: 0,
+      pointsEarned: 0,
+      activeCoupleLinked: false,
+      invites: [],
+    };
   });
 
   const generateNewReferralCode = () => {
@@ -1147,7 +1186,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return INITIAL_SUPPORT_TICKETS;
+    return [];
   });
 
   const createSupportTicket = (
@@ -1259,6 +1298,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const disconnectCoupleSafely = () => {
+    if (cloudCouple()) {
+      void cloudLeaveCouple().then((ok) => {
+        if (!ok) return showToast("Couldn't disconnect right now. Please try again.", 'info');
+        setCoupleRoom(null);
+        setUser((prev) => (prev ? { ...prev, partnerConnected: false } : null));
+        showToast('Partner disconnected. Your copy of the shared space stays private to you.', 'info');
+      });
+      return;
+    }
     setUser((prev) => (prev ? { ...prev, partnerConnected: false } : null));
     showToast('Partner safely disconnected. Shared access paused; your private vault remains secure.', 'info');
   };
@@ -1357,11 +1405,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const params = new URLSearchParams(window.location.search);
     const room = params.get('room');
     if (!room) return;
-    if (user && joinCoupleRoom(room)) setActiveTab('couple-mode');
+    if (user) {
+      if (joinCoupleRoom(room)) setActiveTab('couple-mode');
+    } else {
+      try {
+        sessionStorage.setItem(PENDING_ROOM_KEY, room);
+      } catch {
+        /* ignore */
+      }
+      openAuthModal('signup');
+      showToast('Create an account or sign in to join your partner.', 'info');
+    }
     params.delete('room');
     params.delete('partner');
     const qs = params.toString();
     window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // After a reload: show the pending message, finish a password reset, or join a partner invite opened while signed out.
+  useEffect(() => {
+    let flash: { message?: string; onboarding?: boolean } | null = null;
+    try {
+      flash = JSON.parse(sessionStorage.getItem(FLASH_KEY) || 'null');
+      sessionStorage.removeItem(FLASH_KEY);
+    } catch {
+      flash = null;
+    }
+    if (flash?.message) showToast(flash.message, 'love');
+    if (flash?.onboarding) setOnboardingOpen(true);
+    // First sign-in through Google (no flash message, the page came back from Google).
+    if (!flash && cloudIsNewAccount() && user) {
+      showToast(`Welcome to LoveMate, ${user.name}! Let's personalise your experience.`, 'love');
+      setOnboardingOpen(true);
+    }
+    if (takePasswordRecovery()) openAuthModal('reset');
+    let pendingRoom: string | null = null;
+    try {
+      pendingRoom = sessionStorage.getItem(PENDING_ROOM_KEY);
+      sessionStorage.removeItem(PENDING_ROOM_KEY);
+    } catch {
+      pendingRoom = null;
+    }
+    if (pendingRoom && user && joinCoupleRoom(pendingRoom)) setActiveTab('couple-mode');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Live updates from the partner's device (cloud accounts only).
+  useEffect(() => {
+    if (!cloudEnabled) return;
+    const parse =
+      <T,>(apply: (v: T) => void) =>
+      (raw: string) => {
+        try {
+          apply(JSON.parse(raw) as T);
+        } catch {
+          /* ignore malformed values */
+        }
+      };
+    const setters: Record<string, (raw: string) => void> = {
+      [STORAGE_KEY_SHARED_MEMORIES]: parse(setSharedMemories),
+      [STORAGE_KEY_SHARED_GOALS]: parse(setSharedGoals),
+      [STORAGE_KEY_SHARED_PLANS]: parse(setSharedPlans),
+      [STORAGE_KEY_COUPLE_JOURNAL]: parse(setCoupleJournal),
+      [STORAGE_KEY_LONG_DISTANCE]: parse(setLongDistanceState),
+      [STORAGE_KEY_CALENDAR]: parse(setCalendarEvents),
+      [STORAGE_KEY_WISHLIST]: parse(setWishlistItems),
+      [STORAGE_KEY_TIMELINE]: parse(setTimelineMilestones),
+      [STORAGE_KEY_DATES]: parse(setImportantDates),
+      [STORAGE_KEY_COUPLE_STREAK]: parse(setCoupleStreak),
+      [STORAGE_KEY_REAL_STORY]: parse(setOurRealStory),
+    };
+    const offShared = onSharedChange((key, raw) => setters[key]?.(raw));
+    const offPartner = onPartnerJoined((name) => {
+      setUser((prev) => (prev ? { ...prev, partnerConnected: true, partnerName: name } : prev));
+      setCoupleRoom((r) => (r ? { ...r, status: 'connected', partnerName: name, expiresAt: 'Linked' } : r));
+      showToast(`${name} joined your couple space! 💞`, 'love');
+      triggerConfetti();
+    });
+    return () => {
+      offShared();
+      offPartner();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1594,6 +1719,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // V2: Couple Rooms operations
   const createCoupleRoom = (activityType: CoupleRoom['activityType']) => {
+    if (cloudAccount()) {
+      // Real invite code from the database; the room shows "Creating…" for a moment.
+      const previous = coupleRoom;
+      const myName = user?.name || 'You';
+      const room: CoupleRoom = {
+        id: uid('room'),
+        roomCode: 'Creating…',
+        creatorName: myName,
+        status: 'waiting',
+        activityType,
+        createdAt: 'Just now',
+        expiresAt: 'In 7 days',
+      };
+      setCoupleRoom(room);
+      void cloudCreateCouple(myName).then((res) => {
+        if ('error' in res) {
+          setCoupleRoom(previous);
+          showToast(COUPLE_ERRORS[res.error], 'info');
+          return;
+        }
+        setCoupleRoom((r) => ({ ...(r ?? room), roomCode: res.code }));
+        unlockBadge('couple_explorer');
+        showToast(`Invite code ready: ${res.code}. Share it with your partner ❤️`, 'love');
+      });
+      return room;
+    }
     const code = 'LOVE-' + Math.floor(1000 + Math.random() * 9000);
     const newRoom: CoupleRoom = {
       id: uid('room'),
@@ -1615,13 +1766,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const joinCoupleRoom = (code: string) => {
     const normalized = code.trim().toUpperCase();
-    if (!/^LOVE-[A-Z0-9]{4}$/.test(normalized)) {
-      showToast('Room codes look like LOVE-1234. Check the code and try again.', 'info');
+    if (!ROOM_CODE_RE.test(normalized)) {
+      showToast('Room codes look like LOVE-1A2B3C4D. Check the code and try again.', 'info');
       return false;
     }
     if (coupleRoom && coupleRoom.roomCode === normalized && coupleRoom.creatorName === (user?.name || 'You')) {
       showToast('That is your own room code. Share it with your partner instead.', 'info');
       return false;
+    }
+    if (cloudAccount()) {
+      void cloudJoinCouple(normalized, user?.name || 'Partner').then((res) => {
+        if ('error' in res) return showToast(COUPLE_ERRORS[res.error], 'info');
+        // Reload so every screen starts from the shared space.
+        reloadWith('Connected with your partner! Your shared space is ready 👫');
+      });
+      return true;
     }
     setCoupleRoom({
       id: uid('room'),
@@ -1641,6 +1800,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const leaveCoupleRoom = () => {
+    if (cloudCouple()) {
+      disconnectCoupleSafely();
+      return;
+    }
     setCoupleRoom(null);
     showToast('Left Couple Room', 'info');
   };
@@ -1918,7 +2081,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Auth functions
-  const openAuthModal = (mode: 'login' | 'signup' | 'forgot' | 'verify' = 'login') => {
+  const openAuthModal = (mode: AuthModalMode = 'login') => {
     setAuthModalMode(mode);
     setAuthModalOpen(true);
   };
@@ -1926,22 +2089,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const closeAuthModal = () => {
     setAuthModalOpen(false);
   };
-
-  const newUserRecord = (name: string, email: string): User => ({
-    id: uid('usr'),
-    name,
-    email,
-    streak: 1,
-    points: 100,
-    xp: 250,
-    isPro: false,
-    vibe: 'Cute & Friendly',
-    preferredLanguage: 'hinglish',
-    joinedAt: new Date().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
-    goals: ['Crush'],
-    partnerName: undefined,
-    partnerConnected: false,
-  });
 
   const finishSignIn = (u: User, message: string) => {
     localStorage.removeItem(STORAGE_KEY_SESSION);
@@ -1951,6 +2098,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const login: AppContextType['login'] = async (email, options = {}) => {
+    if (cloudEnabled && !options.provider) {
+      const res = await cloudSignIn(email, options.password || '');
+      if (res === 'ok') reloadWith(`Welcome back, ${cloudAccount()?.name ?? 'friend'}!`);
+      return res;
+    }
     const key = email.trim().toLowerCase();
     const accounts = loadAccounts();
     const account = accounts[key];
@@ -1971,6 +2123,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const signup: AppContextType['signup'] = async (name, email, password) => {
+    if (cloudEnabled) {
+      const res = await cloudSignUp(name, email, password);
+      if (res === 'ok') reloadWith("Account created. Let's personalise your experience.", { onboarding: true });
+      return res;
+    }
     const key = email.trim().toLowerCase();
     const accounts = loadAccounts();
     if (accounts[key]) return 'exists';
@@ -1996,9 +2153,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const accountExists = (email: string) => !!loadAccounts()[email.trim().toLowerCase()];
 
-  // Keep the signed-in user's record in the account store current
+  // Keep the signed-in user's record in the local account store current (cloud accounts live in Supabase)
   useEffect(() => {
-    if (!user) return;
+    if (!user || cloudAccount()) return;
     const accounts = loadAccounts();
     const key = user.email.toLowerCase();
     const current: LocalAccount = accounts[key] ?? { user, passwordHash: null };
@@ -2007,6 +2164,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [user]);
 
   const logout = () => {
+    if (cloudAccount()) {
+      // Saves pending changes, ends the session and clears this device; the data stays in the account.
+      void cloudSignOut().then(() => reloadWith('Logged out', { home: true }));
+      return;
+    }
     localStorage.setItem(STORAGE_KEY_SESSION, 'signed_out');
     setUser(null);
     setPendingCopilotPrompt(null);
@@ -2015,6 +2177,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteAccount = () => {
+    if (cloudAccount()) {
+      void cloudDeleteAccount().then((ok) => {
+        if (ok) reloadWith('Account and all personal relationship data erased.', { home: true });
+        else showToast('Could not delete the account right now. Please try again.', 'info');
+      });
+      return;
+    }
     const email = user?.email.toLowerCase();
     wipeLoveMateStorage();
     if (email) {

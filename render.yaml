@@ -15,3 +15,8 @@ services:
         sync: false
       - key: LOVEMATE_PUBLIC_URL
         sync: false
+      # Public Supabase values, needed at build time (the browser uses them).
+      - key: VITE_SUPABASE_URL
+        value: https://ajkcwnadugrdwygtxlkm.supabase.co
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable__begImMFBIP3RQX3jOaLKA_JF1-tXiv

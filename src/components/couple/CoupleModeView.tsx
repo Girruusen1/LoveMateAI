@@ -30,7 +30,7 @@ import {
 
 const CHECKIN_KEY = 'lovemate_couple_checkin_v1';
 const QUIZ_KEY = 'lovemate_couple_quiz_v1';
-const ROOM_CODE_RE = /^LOVE-[A-Z0-9]{4}$/;
+const ROOM_CODE_RE = /^LOVE-[A-Z0-9]{4,8}$/;
 
 type Choice = 'A' | 'B';
 interface QuizState {
@@ -175,7 +175,7 @@ export const CoupleModeView: React.FC = () => {
     e.preventDefault();
     const normalized = inputCode.trim().toUpperCase();
     if (!ROOM_CODE_RE.test(normalized)) {
-      setJoinError('Room codes look like LOVE-AB12: "LOVE-" followed by 4 letters or numbers.');
+      setJoinError('Room codes look like LOVE-1A2B3C4D: "LOVE-" followed by letters or numbers.');
       return;
     }
     if (isMyRoom && coupleRoom?.roomCode === normalized) {
@@ -555,7 +555,7 @@ export const CoupleModeView: React.FC = () => {
                 <FieldLabel>Partner's code</FieldLabel>
                 <Input
                   type="text"
-                  placeholder="e.g. LOVE-AB12"
+                  placeholder="e.g. LOVE-1A2B3C4D"
                   value={inputCode}
                   onChange={(e) => {
                     setInputCode(e.target.value);

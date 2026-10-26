@@ -44,6 +44,7 @@ export const RelationshipDashboardView: React.FC = () => {
     { label: 'Fun & banter', score: relationshipTrends.overallSnapshot.fun, icon: <Smile /> },
     { label: 'Mutual trust', score: relationshipTrends.overallSnapshot.trust, icon: <HeartHandshake /> },
   ];
+  const hasScores = pillars.some((p) => p.score > 0);
 
   return (
     <PageContainer>
@@ -94,12 +95,21 @@ export const RelationshipDashboardView: React.FC = () => {
               onClick={() => setActiveTab('health-check')}
               className="text-xs font-bold text-rose-600 hover:underline flex items-center gap-1 whitespace-nowrap"
             >
-              Retake check-in <ArrowRight className="w-3 h-3" />
+              {hasScores ? 'Retake check-in' : 'Take check-in'} <ArrowRight className="w-3 h-3" />
             </button>
           }
         />
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {!hasScores && (
+          <div className="p-5 rounded-2xl bg-rose-50/60 border border-rose-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-sm text-zinc-700">No scores yet. Take a 2-minute check-in and your connection pillars appear here.</p>
+            <Button size="sm" onClick={() => setActiveTab('health-check')}>
+              Take the check-in
+            </Button>
+          </div>
+        )}
+
+        <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 ${hasScores ? '' : 'hidden'}`}>
           {pillars.map((item) => (
             <div
               key={item.label}

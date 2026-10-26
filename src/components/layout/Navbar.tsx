@@ -289,19 +289,21 @@ export const Navbar: React.FC = () => {
             <Search className="w-[18px] h-[18px]" />
           </button>
 
-          <button
-            onClick={() => setNotificationsModalOpen(true)}
-            className={iconBtn}
-            title="Notifications"
-            aria-label="Notifications"
-          >
-            <Bell className="w-[18px] h-[18px]" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {unreadCount}
-              </span>
-            )}
-          </button>
+          {user && (
+            <button
+              onClick={() => setNotificationsModalOpen(true)}
+              className={iconBtn}
+              title="Notifications"
+              aria-label="Notifications"
+            >
+              <Bell className="w-[18px] h-[18px]" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          )}
 
           {user ? (
             <div className="relative ml-1" ref={accountRef}>

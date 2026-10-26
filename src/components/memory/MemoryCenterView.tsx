@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Brain,
@@ -23,8 +23,7 @@ import {
   X,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { INITIAL_MEMORY_ENTITIES, INITIAL_MEMORY_RELATIONS } from '../../data/seedData';
-import { UserMemoryItem } from '../../types';
+import { MemoryEntity, UserMemoryItem } from '../../types';
 import {
   Badge,
   Button,
@@ -40,8 +39,20 @@ import {
   inputClasses,
 } from '../common/UIPrimitives';
 
+/** How each memory category appears as a node and as a connection in the graph. */
+const GRAPH_CATEGORY_META: Record<UserMemoryItem['category'], { type: MemoryEntity['type']; label: string; relation: string }> = {
+  personal: { type: 'user', label: 'About you', relation: 'notes' },
+  relationship: { type: 'event', label: 'Relationship', relation: 'shares' },
+  preferences: { type: 'preference', label: 'Preferences', relation: 'prefers' },
+  memories: { type: 'event', label: 'Past moments', relation: 'remembers' },
+  goals: { type: 'goal', label: 'Goals', relation: 'plans' },
+  communication: { type: 'activity', label: 'Communication', relation: 'communicates' },
+  important_dates: { type: 'date', label: 'Dates', relation: 'celebrates' },
+};
+
 export const MemoryCenterView: React.FC = () => {
   const {
+    user,
     userMemories,
     addUserMemory,
     updateUserMemory,
@@ -98,6 +109,41 @@ export const MemoryCenterView: React.FC = () => {
     setNewContent('');
     setShowAddModal(false);
   };
+
+  // Relationship graph, derived only from the user's own profile and remembered facts.
+  const youLabel = user?.name || 'You';
+  const graphEntities = useMemo<MemoryEntity[]>(() => {
+    const entities: MemoryEntity[] = [{ id: 'ent_user', type: 'user', name: youLabel }];
+    if (user?.partnerName) entities.push({ id: 'ent_partner', type: 'partner', name: user.partnerName });
+
+    const counts = new Map<UserMemoryItem['category'], number>();
+    userMemories.forEach((m) => counts.set(m.category, (counts.get(m.category) || 0) + 1));
+    counts.forEach((count, category) => {
+      const meta = GRAPH_CATEGORY_META[category];
+      entities.push({ id: `ent_${category}`, type: meta.type, name: meta.label, metadata: { count } });
+    });
+    return entities;
+  }, [userMemories, youLabel, user?.partnerName]);
+
+  const graphConnections = useMemo(() => {
+    const importanceRank: Record<string, number> = { critical: 3, high: 2, medium: 1, low: 0 };
+    // Shared facts belong to the couple; private ones only to the user.
+    const coupleLabel = user?.partnerName ? `${youLabel} & ${user.partnerName}` : youLabel;
+    return [...userMemories]
+      .sort(
+        (a, b) =>
+          (importanceRank[b.importance || ''] ?? 0) - (importanceRank[a.importance || ''] ?? 0) ||
+          (b.confidence || 0) - (a.confidence || 0)
+      )
+      .slice(0, 12)
+      .map((m) => ({
+        id: m.id,
+        source: m.visibility === 'shared' ? coupleLabel : youLabel,
+        relation: GRAPH_CATEGORY_META[m.category].relation,
+        target: m.content,
+        confidence: m.confidence || 0.95,
+      }));
+  }, [userMemories, youLabel, user?.partnerName]);
 
   const pendingContradictions = memoryContradictions
     ? memoryContradictions.filter((c) => c.status === 'pending')
@@ -197,32 +243,50 @@ export const MemoryCenterView: React.FC = () => {
           />
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
-            {INITIAL_MEMORY_ENTITIES.map((ent) => (
+            {graphEntities.map((ent) => (
               <div
                 key={ent.id}
                 className="p-3 rounded-2xl bg-zinc-50 border border-zinc-200 text-center space-y-1 hover:border-rose-300 transition-colors"
               >
                 <span className="text-[10px] font-mono uppercase text-rose-600 font-bold block">{ent.type}</span>
                 <p className="text-xs font-bold text-zinc-800 truncate">{ent.name}</p>
+                {typeof ent.metadata?.count === 'number' && (
+                  <p className="text-[10px] text-zinc-400">{ent.metadata.count} {ent.metadata.count === 1 ? 'fact' : 'facts'}</p>
+                )}
               </div>
             ))}
           </div>
 
-          <div className="bg-zinc-50/70 rounded-2xl p-4 border border-zinc-200/80 space-y-2">
-            <p className="text-xs font-bold text-zinc-700">Active connections</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              {INITIAL_MEMORY_RELATIONS.map((rel) => (
-                <div key={rel.id} className="p-2.5 rounded-xl bg-white border border-zinc-200 flex items-center justify-between gap-2">
-                  <span className="font-semibold text-zinc-700 min-w-0 truncate">
-                    <span className="text-zinc-500">{rel.sourceEntityId.replace('ent_', '')}</span>{' '}
-                    <span className="text-rose-600 font-bold">{rel.relation}</span>{' '}
-                    <span className="text-zinc-900">{rel.targetEntityId.replace('ent_', '')}</span>
-                  </span>
-                  <span className="text-[10px] text-zinc-400 font-mono shrink-0">{Math.round(rel.confidence * 100)}%</span>
-                </div>
-              ))}
+          {userMemories.length === 0 ? (
+            <div className="bg-zinc-50/70 rounded-2xl p-5 border border-zinc-200/80 text-center space-y-2">
+              <p className="text-xs font-bold text-zinc-700">Your graph is empty for now</p>
+              <p className="text-xs text-zinc-500 max-w-sm mx-auto leading-relaxed">
+                It grows as LoveMate learns about you{user?.partnerName ? ` and ${user.partnerName}` : ''}. Add a memory or
+                chat with LoveMate to create your first connection.
+              </p>
+              <div className="pt-1">
+                <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => setShowAddModal(true)}>
+                  Add memory
+                </Button>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-zinc-50/70 rounded-2xl p-4 border border-zinc-200/80 space-y-2">
+              <p className="text-xs font-bold text-zinc-700">Active connections</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {graphConnections.map((rel) => (
+                  <div key={rel.id} className="p-2.5 rounded-xl bg-white border border-zinc-200 flex items-center justify-between gap-2">
+                    <span className="font-semibold text-zinc-700 min-w-0 truncate" title={rel.target}>
+                      <span className="text-zinc-500">{rel.source}</span>{' '}
+                      <span className="text-rose-600 font-bold">{rel.relation}</span>{' '}
+                      <span className="text-zinc-900">{rel.target}</span>
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono shrink-0">{Math.round(rel.confidence * 100)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

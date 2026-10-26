@@ -72,6 +72,7 @@ import { TrustSafetyCenterView } from './components/trust/TrustSafetyCenterView'
 import { ReferralCenterView } from './components/growth/ReferralCenterView';
 import { CustomerSupportView } from './components/support/CustomerSupportView';
 import { AppProvider, useApp } from './context/AppContext';
+import type { ActiveTab } from './types';
 import { FeatureGate } from './components/common/FeatureGate';
 import { GenAIStatusBanner } from './components/common/GenAIStatusBanner';
 
@@ -80,8 +81,46 @@ const LogoModalHost: React.FC = () => {
   return <LogoShowcaseModal isOpen={logoModalOpen} onClose={() => setLogoModalOpen(false)} />;
 };
 
+/** Pages built on the user's own or the couple's data. Visitors are asked to sign in instead; the AI tools stay open to try. */
+const ACCOUNT_PAGES: Partial<Record<ActiveTab, string>> = {
+  'our-space': 'Our Space',
+  'couple-mode': 'Couple room',
+  'couple-coach': 'Couples coach',
+  'long-distance': 'Long distance',
+  timeline: 'Timeline',
+  'important-dates': 'Important dates',
+  'trip-together': 'Trip together',
+  wrapped: 'Your Wrapped',
+  'memory-center': 'Memory center',
+  'relationship-dashboard': 'Relationship dashboard',
+  'relationship-patterns': 'Relationship patterns',
+  'relationship-dna': 'Relationship DNA',
+  'health-check': 'Relationship check-in',
+  'our-story': 'Our story',
+  scrapbook: 'Scrapbook',
+  'our-story-movie': 'Our story movie',
+  challenges: 'Challenges',
+  copilot: 'Ask LoveMate',
+  'agent-activity': 'Agent activity',
+  autopilot: 'Autopilot',
+  'couple-calendar': 'Couple calendar',
+  wishlist: 'Wishlist',
+  referrals: 'Invite friends',
+};
+
 const MainContent: React.FC = () => {
-  const { activeTab } = useApp();
+  const { activeTab, user } = useApp();
+
+  const accountPage = ACCOUNT_PAGES[activeTab];
+  if (!user && accountPage) {
+    return (
+      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <FeatureGate requireAuth featureName={accountPage}>
+          {null}
+        </FeatureGate>
+      </main>
+    );
+  }
 
   return (
     <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">

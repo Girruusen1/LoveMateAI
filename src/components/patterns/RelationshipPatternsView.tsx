@@ -154,6 +154,14 @@ export const RelationshipPatternsView: React.FC = () => {
       {/* Tab 2: Trends View */}
       {activeTabFilter === 'trends' && (
         <div className="space-y-6">
+          {trendTiles.every((t) => t.value === 0) && (
+            <p className="p-4 rounded-2xl bg-rose-50/60 border border-rose-100 text-sm text-zinc-700">
+              No trends yet. They appear after your first relationship check-in.{' '}
+              <button onClick={() => setActiveTab('health-check')} className="font-semibold text-rose-600 hover:underline">
+                Take the check-in
+              </button>
+            </p>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {trendTiles.map((tile) => (
               <div key={tile.label} className="bg-white p-5 rounded-2xl border border-zinc-200 space-y-2">

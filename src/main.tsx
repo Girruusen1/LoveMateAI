@@ -2,6 +2,7 @@ import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
+import { bootstrapCloud } from './services/cloud';
 
 interface BoundaryState {
   error: Error | null;
@@ -51,10 +52,13 @@ class AppErrorBoundary extends React.Component<{ children: React.ReactNode }, Bo
   }
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <AppErrorBoundary>
-      <App />
-    </AppErrorBoundary>
-  </StrictMode>
+// Load the signed-in account's data (if any) before the first render, so every screen starts from it.
+void bootstrapCloud().finally(() =>
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
+    </StrictMode>
+  )
 );
