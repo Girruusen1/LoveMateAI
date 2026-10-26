@@ -4,17 +4,18 @@ import { useApp } from '../../context/AppContext';
 import { ActiveTab } from '../../types';
 import { LoveMateLogo } from '../common/LoveMateLogo';
 
-const LINKS: { label: string; tab: ActiveTab }[] = [
-  { label: 'Ask LoveMate', tab: 'copilot' },
-  { label: 'Our Space', tab: 'our-space' },
-  { label: 'Calendar', tab: 'couple-calendar' },
-  { label: 'Saved library', tab: 'library' },
+/** `member` links only make sense with an account and are hidden from visitors. */
+const LINKS: { label: string; tab: ActiveTab; member?: boolean }[] = [
+  { label: 'Ask LoveMate', tab: 'copilot', member: true },
+  { label: 'Our Space', tab: 'our-space', member: true },
+  { label: 'Calendar', tab: 'couple-calendar', member: true },
+  { label: 'Saved library', tab: 'library', member: true },
   { label: 'Trust & safety', tab: 'trust-center' },
-  { label: 'Support', tab: 'support' },
+  { label: 'Support', tab: 'support', member: true },
 ];
 
 export const Footer: React.FC = () => {
-  const { setActiveTab, setProModalOpen } = useApp();
+  const { user, setActiveTab, setProModalOpen, openAuthModal } = useApp();
 
   return (
     <footer className="border-t border-zinc-200/80 bg-white pb-24 lg:pb-0">
@@ -29,13 +30,18 @@ export const Footer: React.FC = () => {
           </div>
 
           <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label="Footer">
-            {LINKS.map((l) => (
+            {LINKS.filter((l) => user || !l.member).map((l) => (
               <button key={l.tab} onClick={() => setActiveTab(l.tab)} className="text-zinc-600 hover:text-zinc-900 transition-colors">
                 {l.label}
               </button>
             ))}
+            {!user && (
+              <button onClick={() => openAuthModal('login')} className="text-zinc-600 hover:text-zinc-900 transition-colors">
+                Log in
+              </button>
+            )}
             <button onClick={() => setProModalOpen(true)} className="text-rose-600 hover:text-rose-700 font-medium">
-              LoveMate Pro
+              {user ? 'LoveMate Pro' : 'Pricing'}
             </button>
           </nav>
         </div>

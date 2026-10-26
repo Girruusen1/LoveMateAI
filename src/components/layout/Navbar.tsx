@@ -224,7 +224,7 @@ export const Navbar: React.FC = () => {
 
         {/* Desktop navigation */}
         <nav className="hidden lg:flex items-center gap-1" aria-label="Primary">
-          {PRIMARY.map((item) => {
+          {PRIMARY.filter((item) => user || item.tab === 'home').map((item) => {
             const active = activeTab === item.tab;
             return (
               <button

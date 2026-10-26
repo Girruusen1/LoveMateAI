@@ -22,6 +22,8 @@ export const ProModal: React.FC = () => {
     cancelSubscription,
     formatCurrency,
     showToast,
+    user,
+    openAuthModal,
   } = useApp();
 
   const [selectedTier, setSelectedTier] = useState<SubscriptionTierV5>(userSubscription.tier || 'premium');
@@ -98,6 +100,13 @@ export const ProModal: React.FC = () => {
   ];
 
   const handleSelectPlan = (tier: SubscriptionTierV5) => {
+    if (!user) {
+      // A plan belongs to an account.
+      setProModalOpen(false);
+      openAuthModal('signup');
+      showToast('Create a free account first, then pick your plan.', 'info');
+      return;
+    }
     upgradeSubscription(tier);
     setProModalOpen(false);
   };
@@ -165,7 +174,7 @@ export const ProModal: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {tiers.map((t) => {
               const price = billingCycle === 'yearly' ? t.yearlyINR : t.monthlyINR;
-              const isCurrent = userSubscription.tier === t.id;
+              const isCurrent = !!user && userSubscription.tier === t.id;
               const isSelected = selectedTier === t.id;
 
               return (
@@ -225,7 +234,7 @@ export const ProModal: React.FC = () => {
                         : 'bg-zinc-900 hover:bg-black text-white'
                     }`}
                   >
-                    {isCurrent ? 'Current plan' : `Switch to ${t.name}`}
+                    {isCurrent ? 'Current plan' : user ? `Switch to ${t.name}` : `Choose ${t.name}`}
                   </button>
                 </div>
               );

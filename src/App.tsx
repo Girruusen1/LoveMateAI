@@ -82,7 +82,7 @@ const LogoModalHost: React.FC = () => {
 };
 
 /** Pages anyone can open. Every tool needs a free account (the landing page has a live demo to try first). */
-const PUBLIC_PAGES = new Set<ActiveTab>(['home', 'pro', 'trust-center', 'support']);
+const PUBLIC_PAGES = new Set<ActiveTab>(['home', 'pro', 'trust-center']);
 
 /** Names for the sign-in prompt, taken from the menu. */
 const PAGE_NAMES: Partial<Record<ActiveTab, string>> = {

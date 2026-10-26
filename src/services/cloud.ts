@@ -215,9 +215,9 @@ export async function bootstrapCloud(): Promise<void> {
     const { data } = await withTimeout(sb.auth.getSession(), 6000);
     const user = data.session?.user;
     if (!user) {
-      // Signed out elsewhere, the session expired, or a login left over from the old browser-only accounts
-      // (including the former automatic sample user): clear it so this visitor is really signed out.
-      if (localStorage.getItem(OWNER_KEY) || localStorage.getItem('lovemate_user_v2')) wipeLocal();
+      // Not signed in: keep nothing from an earlier session, an expired login or the old browser-only
+      // accounts (including the former sample user and its data). Visitors start clean every time.
+      wipeLocal();
       return;
     }
     await withTimeout(hydrate(user), 8000);
