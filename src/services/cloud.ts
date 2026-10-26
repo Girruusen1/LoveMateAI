@@ -36,6 +36,7 @@ export const SHARED_KEYS = new Set([
   'lovemate_dates_v2',
   'lovemate_couple_streak_v2',
   'lovemate_real_story_v1',
+  'lovemate_couple_plan_v1',
 ]);
 
 export interface CloudAccount {

@@ -55,6 +55,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { PLANS } from '../../utils/plans';
 import { ActiveTab, CurrencyCode } from '../../types';
 import { LoveMateLogo } from '../common/LoveMateLogo';
 
@@ -171,6 +172,9 @@ export const Navbar: React.FC = () => {
     globalization,
     updateGlobalization,
     userSubscription,
+    plan,
+    trialDaysLeft,
+    planFromPartner,
     isAdmin,
   } = useApp();
 
@@ -180,7 +184,13 @@ export const Navbar: React.FC = () => {
   const accountRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
-  const isPaid = userSubscription.tier !== 'free';
+  const isPaid = plan !== 'free';
+  const planLabel =
+    trialDaysLeft !== null
+      ? `Plus trial · ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'} left`
+      : planFromPartner
+        ? 'Couple (from your partner)'
+        : `LoveMate ${PLANS[plan].name}`;
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -340,8 +350,8 @@ export const Navbar: React.FC = () => {
 
                   <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold text-zinc-900">{isPaid ? `LoveMate ${userSubscription.tier}` : 'Free plan'}</p>
-                      <p className="text-[11px] text-zinc-500">{isPaid ? 'Manage your plan' : 'Unlock memory, copilot and more'}</p>
+                      <p className="text-xs font-semibold text-zinc-900">{isPaid ? planLabel : 'Free plan'}</p>
+                      <p className="text-[11px] text-zinc-500">{isPaid ? 'Manage your plan' : 'Unlimited AI tools from ₹' + PLANS.plus.monthlyINR}</p>
                     </div>
                     <button
                       onClick={() => {

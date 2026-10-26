@@ -214,7 +214,7 @@ const TOOLS: { label: string; tab: ActiveTab; icon: React.ReactNode }[] = [
 ];
 
 const FAQ = [
-  { q: 'Is LoveMate free?', a: 'Yes. You can use the core tools for free. Paid plans add things like long-term memory, couple features and the planning assistant.' },
+  { q: 'Is LoveMate free?', a: 'Yes. The free plan gives you daily AI chats, decodes, replies and confessions, plus games and Our Space. New accounts also get 7 days of Plus free. Plus (₹149/month) makes every tool unlimited, and Couple (₹249/month) covers both partners with one payment.' },
   { q: 'Does it understand Hinglish?', a: 'Yes. You can write in Hinglish, Hindi or English, and choose the language for replies and suggestions.' },
   { q: 'Who can see what I write?', a: 'Only you. Your chats, drafts and reflections are private by default, and you can delete everything from Trust & safety at any time.' },
   { q: 'Can LoveMate tell me if they like me?', a: "No one can read minds. LoveMate shows you possible meanings and what would confirm them, so you can decide calmly instead of overthinking." },
@@ -484,7 +484,7 @@ export const LandingPage: React.FC = () => {
           <Sparkles className="w-8 h-8 text-rose-500" />
           <h2 className="mt-4 text-2xl sm:text-3xl font-serif-romance font-bold text-zinc-900">Start free. Upgrade when you're ready.</h2>
           <p className="mt-3 text-sm text-zinc-600 leading-relaxed">
-            The free plan covers decoding, replies, confessions and games. Paid plans add long-term memory, couple features and the planning assistant.
+            Free gives you daily decodes, replies, confessions and games. Plus (₹149/month) makes every AI tool unlimited, and Couple (₹249/month) covers both partners. New accounts get 7 days of Plus free.
           </p>
           <div className="mt-auto pt-6 flex flex-wrap gap-3">
             <button onClick={signup} className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-semibold">

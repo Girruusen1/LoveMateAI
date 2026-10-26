@@ -1,8 +1,9 @@
 import React from 'react';
-import { Lock, ShieldAlert, Wrench } from 'lucide-react';
+import { Lock, ShieldAlert, Sparkles, Wrench } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { EntitlementFeature, FeatureFlags } from '../../types';
 import { Button, PageContainer } from './UIPrimitives';
+import { PLANS, type PaidPlan } from '../../utils/plans';
 
 interface FeatureGateProps {
   /** Plan entitlement required to use this page */
@@ -13,6 +14,8 @@ interface FeatureGateProps {
   adminOnly?: boolean;
   /** Signed-in users only */
   requireAuth?: boolean;
+  /** Paid plan needed to open this page */
+  plan?: PaidPlan;
   featureName: string;
   children: React.ReactNode;
 }
@@ -36,14 +39,14 @@ const TIER_FOR: Record<EntitlementFeature, string> = {
   memory_center: 'Plus',
   couple_sync: 'Couple',
   experience_marketplace: 'Couple',
-  agent_autonomous: 'Premium',
-  autopilot: 'Premium',
-  unlimited_plans: 'Premium',
+  agent_autonomous: 'Couple',
+  autopilot: 'Couple',
+  unlimited_plans: 'Couple',
 };
 
 /** Wraps a page and shows an explanatory card instead when the user may not use it. */
-export const FeatureGate: React.FC<FeatureGateProps> = ({ entitlement, flag, adminOnly, requireAuth, featureName, children }) => {
-  const { user, isAdmin, canUseFeature, featureFlags, setProModalOpen, openAuthModal, setActiveTab } = useApp();
+export const FeatureGate: React.FC<FeatureGateProps> = ({ entitlement, flag, adminOnly, requireAuth, plan, featureName, children }) => {
+  const { user, isAdmin, canUseFeature, hasPlan, featureFlags, setProModalOpen, openAuthModal, setActiveTab } = useApp();
 
   if (adminOnly && !isAdmin) {
     return (
@@ -77,6 +80,27 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({ entitlement, flag, adm
           <>
             <Button variant="secondary" onClick={() => openAuthModal('login')}>Sign in</Button>
             <Button onClick={() => openAuthModal('signup')}>Create account</Button>
+          </>
+        }
+      />
+    );
+  }
+
+  if (plan && !hasPlan(plan)) {
+    const p = PLANS[plan];
+    return (
+      <Notice
+        icon={<Sparkles />}
+        title={`${featureName} is part of LoveMate ${p.name}`}
+        body={
+          plan === 'couple'
+            ? `Couple unlocks ${featureName.toLowerCase()} and every other tool for you and your partner, with one payment of ₹${p.monthlyINR}/month.`
+            : `Plus unlocks ${featureName.toLowerCase()} and unlimited AI tools for ₹${p.monthlyINR}/month (₹${p.yearlyINR} a year).`
+        }
+        action={
+          <>
+            <Button variant="secondary" onClick={() => setActiveTab('home')}>Not now</Button>
+            <Button onClick={() => setProModalOpen(true)}>See plans</Button>
           </>
         }
       />

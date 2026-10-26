@@ -32,10 +32,10 @@ export const ProfileSettingsView: React.FC = () => {
     logout,
     deleteAccount,
     showToast,
-    userSubscription,
+    plan,
   } = useApp();
 
-  const isPro = (userSubscription?.tier ?? 'free') !== 'free' || !!user?.isPro;
+  const isPro = plan !== 'free';
 
   const [newMemoryText, setNewMemoryText] = useState('');
   const [editingName, setEditingName] = useState(user?.name || '');
@@ -77,7 +77,7 @@ export const ProfileSettingsView: React.FC = () => {
               <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 tracking-tight">{user.name}</h1>
               {isPro ? (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white">
-                  PRO
+                  {plan.toUpperCase()}
                 </span>
               ) : (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600">

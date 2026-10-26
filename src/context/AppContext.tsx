@@ -84,6 +84,17 @@ import { AIService } from '../services/ai';
 import { AI_ERROR_EVENT, getGenAIStatus } from '../services/genaiClient';
 import { uid } from '../utils/uid';
 import { hashToTab, tabToHash } from '../utils/routes';
+import {
+  BUCKET_FOR_METHOD,
+  BUCKET_LABEL,
+  FREE_DAILY_LIMITS,
+  PLAN_RANK,
+  PLANS,
+  TRIAL_DAYS,
+  normalizePlan,
+  type Plan,
+  type UsageBucket,
+} from '../utils/plans';
 import { hashPassword, loadAccounts, saveAccounts, type LocalAccount } from '../utils/accounts';
 import {
   cloudAccount,
@@ -306,6 +317,15 @@ interface AppContextType {
   // 1. Monetization 2.0 & Entitlements
   userSubscription: UserSubscriptionV5;
   canUseFeature: (feature: EntitlementFeature) => boolean;
+  /** The plan the user can use right now (their own, or Couple paid by the linked partner). */
+  plan: Plan;
+  hasPlan: (needed: Plan) => boolean;
+  /** Days left in the free Plus trial, or null when not on a trial. */
+  trialDaysLeft: number | null;
+  /** True when the Couple plan comes from the partner's payment. */
+  planFromPartner: boolean;
+  /** Free plan: AI uses so far today per kind of tool. */
+  aiUsageToday: Record<UsageBucket, number>;
   upgradeSubscription: (tier: SubscriptionTierV5) => void;
   cancelSubscription: () => void;
   incrementAiUsage: () => void;
@@ -423,9 +443,9 @@ const FLASH_KEY = 'lovemate_flash_v1';
 const PENDING_ROOM_KEY = 'lovemate_pending_room_v1';
 const ROOM_CODE_RE = /^LOVE-[A-Z0-9]{4,8}$/;
 
-function reloadWith(message: string, options: { onboarding?: boolean; home?: boolean } = {}) {
+function reloadWith(message: string, options: { onboarding?: boolean; trial?: boolean; home?: boolean } = {}) {
   try {
-    sessionStorage.setItem(FLASH_KEY, JSON.stringify({ message, onboarding: !!options.onboarding }));
+    sessionStorage.setItem(FLASH_KEY, JSON.stringify({ message, onboarding: !!options.onboarding, trial: !!options.trial }));
   } catch {
     /* private mode: the message is skipped */
   }
@@ -479,6 +499,8 @@ const STORAGE_KEY_FEATURE_FLAGS = 'lovemate_flags_v4';
 
 // V5 Storage Keys
 const STORAGE_KEY_SUBSCRIPTION = 'lovemate_subscription_v5';
+const STORAGE_KEY_COUPLE_PLAN = 'lovemate_couple_plan_v1';
+const STORAGE_KEY_AI_USAGE = 'lovemate_ai_usage_v1';
 const STORAGE_KEY_AI_MODELS = 'lovemate_ai_models_v5';
 const STORAGE_KEY_PROMPT_VERSIONS = 'lovemate_prompts_v5';
 const STORAGE_KEY_EVAL_CASES = 'lovemate_eval_cases_v5';
@@ -953,12 +975,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_USER_SUBSCRIPTION_V5;
   });
 
-  const canUseFeature = (feature: EntitlementFeature): boolean => {
-    const tier = userSubscription.tier;
-    const isPlus = tier === 'plus';
-    const isCouple = tier === 'couple';
-    const isPremium = tier === 'premium';
+  // Couple plan paid by either partner covers both (a shared key, synced to the partner live).
+  const [couplePlan, setCouplePlan] = useState<{ by: string } | null>(() => readJSON<{ by: string } | null>(STORAGE_KEY_COUPLE_PLAN, null));
+  const trialEnd = userSubscription.status === 'trialing' && userSubscription.trialEndsAt ? Date.parse(userSubscription.trialEndsAt) : null;
+  const trialExpired = trialEnd !== null && trialEnd <= Date.now();
+  const ownPlan: Plan = trialExpired ? 'free' : normalizePlan(userSubscription.tier);
+  const planFromPartner = !!couplePlan && couplePlan.by !== user?.id && !!user?.partnerConnected && ownPlan !== 'couple';
+  const plan: Plan = planFromPartner ? 'couple' : ownPlan;
+  const hasPlan = (needed: Plan) => PLAN_RANK[plan] >= PLAN_RANK[needed];
+  const trialDaysLeft = trialEnd !== null && !trialExpired ? Math.max(1, Math.ceil((trialEnd - Date.now()) / 86_400_000)) : null;
 
+  const [aiUsage, setAiUsage] = useState<{ date: string; counts: Partial<Record<UsageBucket, number>> }>(() =>
+    readJSON(STORAGE_KEY_AI_USAGE, { date: todayKey(), counts: {} })
+  );
+  const usageCounts = aiUsage.date === todayKey() ? aiUsage.counts : {};
+  const aiUsageToday: Record<UsageBucket, number> = {
+    chat: usageCounts.chat ?? 0,
+    decode: usageCounts.decode ?? 0,
+    replies: usageCounts.replies ?? 0,
+    confession: usageCounts.confession ?? 0,
+    other: usageCounts.other ?? 0,
+  };
+
+  const startPlusTrial = () => {
+    setUserSubscription({
+      ...INITIAL_USER_SUBSCRIPTION_V5,
+      tier: 'plus',
+      status: 'trialing',
+      trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000).toISOString(),
+    });
+  };
+
+  const canUseFeature = (feature: EntitlementFeature): boolean => {
     switch (feature) {
       case 'basic_chat':
       case 'love_calculator':
@@ -966,14 +1014,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return true;
       case 'advanced_ai':
       case 'memory_center':
-        return isPlus || isCouple || isPremium;
+        return hasPlan('plus');
       case 'couple_sync':
       case 'experience_marketplace':
-        return isCouple || isPremium;
       case 'agent_autonomous':
       case 'autopilot':
       case 'unlimited_plans':
-        return isPremium;
+        return hasPlan('couple');
       default:
         return true;
     }
@@ -982,16 +1029,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const upgradeSubscription = (tier: SubscriptionTierV5) => {
     const priceMap: Record<SubscriptionTierV5, number> = {
       free: 0,
-      plus: 199,
-      couple: 349,
-      premium: 499,
+      plus: PLANS.plus.monthlyINR,
+      couple: PLANS.couple.monthlyINR,
+      premium: PLANS.couple.monthlyINR,
     };
-    if (tier === userSubscription.tier) return;
+    if (tier === userSubscription.tier && userSubscription.status !== 'trialing') return;
     const limitMap: Record<SubscriptionTierV5, number> = { free: 60, plus: 500, couple: 1000, premium: 5000 };
     setUserSubscription((prev) => ({
       ...prev,
       tier,
       status: 'active',
+      trialEndsAt: undefined,
       monthlyPrice: priceMap[tier],
       aiRequestsLimitMonthly: limitMap[tier],
       cancelAtPeriodEnd: false,
@@ -1002,8 +1050,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
     triggerConfetti();
-    const label = tier.charAt(0).toUpperCase() + tier.slice(1);
-    showToast(`Welcome to LoveMate ${label}. Your new features are unlocked.`, 'love');
+    const label = PLANS[normalizePlan(tier)].name;
+    showToast(
+      tier === 'couple' ? `Welcome to LoveMate ${label}. Your partner gets every feature too.` : `Welcome to LoveMate ${label}. Your new features are unlocked.`,
+      'love'
+    );
   };
 
   const cancelSubscription = () => {
@@ -1318,6 +1369,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [userSubscription]);
 
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_AI_USAGE, JSON.stringify(aiUsage));
+  }, [aiUsage]);
+
+  useEffect(() => {
+    if (couplePlan) localStorage.setItem(STORAGE_KEY_COUPLE_PLAN, JSON.stringify(couplePlan));
+    else localStorage.removeItem(STORAGE_KEY_COUPLE_PLAN);
+  }, [couplePlan]);
+
+  // The free trial ends by itself.
+  useEffect(() => {
+    if (!user || !trialExpired) return;
+    setUserSubscription((prev) => ({ ...prev, tier: 'free', status: 'active', trialEndsAt: undefined }));
+    showToast(`Your ${TRIAL_DAYS}-day Plus trial has ended. Plus stays unlimited for ₹${PLANS.plus.monthlyINR}/month.`, 'info');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, trialExpired]);
+
+  // A partner on the Couple plan shares it: publish or withdraw the shared marker.
+  useEffect(() => {
+    if (!user || !cloudCouple()) return;
+    if (ownPlan === 'couple' && couplePlan?.by !== user.id) setCouplePlan({ by: user.id });
+    else if (ownPlan !== 'couple' && couplePlan?.by === user.id) setCouplePlan(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownPlan, user?.id, user?.partnerConnected]);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEY_AI_MODELS, JSON.stringify(aiModels));
   }, [aiModels]);
 
@@ -1435,9 +1511,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (flash?.message) showToast(flash.message, 'love');
     if (flash?.onboarding) setOnboardingOpen(true);
+    if (flash && (flash as { trial?: boolean }).trial) startPlusTrial();
     // First sign-in through Google (no flash message, the page came back from Google).
     if (!flash && cloudIsNewAccount() && user) {
-      showToast(`Welcome to LoveMate, ${user.name}! Let's personalise your experience.`, 'love');
+      showToast(`Welcome to LoveMate, ${user.name}! Your ${TRIAL_DAYS}-day Plus trial has started.`, 'love');
+      startPlusTrial();
       setOnboardingOpen(true);
     }
     if (takePasswordRecovery()) openAuthModal('reset');
@@ -1476,6 +1554,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       [STORAGE_KEY_DATES]: parse(setImportantDates),
       [STORAGE_KEY_COUPLE_STREAK]: parse(setCoupleStreak),
       [STORAGE_KEY_REAL_STORY]: parse(setOurRealStory),
+      [STORAGE_KEY_COUPLE_PLAN]: parse(setCouplePlan),
     };
     const offShared = onSharedChange((key, raw) => setters[key]?.(raw));
     const offPartner = onPartnerJoined((name) => {
@@ -1483,6 +1562,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCoupleRoom((r) => (r ? { ...r, status: 'connected', partnerName: name, expiresAt: 'Linked' } : r));
       showToast(`${name} joined your couple space! 💞`, 'love');
       triggerConfetti();
+      if (planRef.current !== 'couple') {
+        setTimeout(
+          () => showToast(`Tip: with Couple (₹${PLANS.couple.monthlyINR}/month) you both get every feature. One payment covers two.`, 'info'),
+          4000
+        );
+      }
     });
     return () => {
       offShared();
@@ -1503,9 +1588,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Meter every AI call and enforce the free-tier monthly limit (wraps the static service once)
-  const subscriptionRef = React.useRef(userSubscription);
-  subscriptionRef.current = userSubscription;
+  // Meter every AI call and enforce the Free plan's daily allowances (wraps the static service once)
+  const planRef = React.useRef(plan);
+  planRef.current = plan;
+  const usageRef = React.useRef(aiUsageToday);
+  usageRef.current = aiUsageToday;
   useEffect(() => {
     const svc = AIService as unknown as Record<string, unknown> & { __metered?: boolean };
     if (svc.__metered) return;
@@ -1515,13 +1602,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const fn = svc[key];
       // Only meter real (async) AI generations; synchronous helpers keep their plain return values.
       if (typeof fn !== 'function' || skip.has(key) || fn.constructor.name !== 'AsyncFunction') continue;
+      const bucket: UsageBucket = BUCKET_FOR_METHOD[key] ?? 'other';
       svc[key] = (...args: unknown[]) => {
-        const sub = subscriptionRef.current;
-        if (sub.tier === 'free' && sub.aiRequestsUsedThisMonth >= sub.aiRequestsLimitMonthly) {
+        if (planRef.current === 'free' && usageRef.current[bucket] >= FREE_DAILY_LIMITS[bucket]) {
           setProModalOpen(true);
-          showToast("You've used this month's free AI requests. Upgrade to keep going.", 'info');
+          showToast(
+            `You've used your ${FREE_DAILY_LIMITS[bucket]} free ${BUCKET_LABEL[bucket]} for today. Plus is unlimited for ₹${PLANS.plus.monthlyINR}/month, or come back tomorrow.`,
+            'info'
+          );
           return Promise.reject(new Error('AI_LIMIT_REACHED'));
         }
+        setAiUsage((prev) => {
+          const counts = prev.date === todayKey() ? prev.counts : {};
+          return { date: todayKey(), counts: { ...counts, [bucket]: (counts[bucket] ?? 0) + 1 } };
+        });
         setUserSubscription((prev) => ({ ...prev, aiRequestsUsedThisMonth: prev.aiRequestsUsedThisMonth + 1 }));
         return (fn as (...a: unknown[]) => unknown).apply(AIService, args);
       };
@@ -2126,7 +2220,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const signup: AppContextType['signup'] = async (name, email, password) => {
     if (cloudEnabled) {
       const res = await cloudSignUp(name, email, password);
-      if (res === 'ok') reloadWith("Account created. Let's personalise your experience.", { onboarding: true });
+      if (res === 'ok') reloadWith(`Account created. Your ${TRIAL_DAYS}-day Plus trial has started.`, { onboarding: true, trial: true });
       return res;
     }
     const key = email.trim().toLowerCase();
@@ -2139,7 +2233,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUser(u);
     closeAuthModal();
     setOnboardingOpen(true);
-    showToast("Account created. Let's personalise your experience.", 'love');
+    startPlusTrial();
+    showToast(`Account created. Your ${TRIAL_DAYS}-day Plus trial has started.`, 'love');
     return 'ok';
   };
 
@@ -2606,6 +2701,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // V5 Provider Values
         userSubscription,
         canUseFeature,
+        plan,
+        hasPlan,
+        trialDaysLeft,
+        planFromPartner,
+        aiUsageToday,
         upgradeSubscription,
         cancelSubscription,
         incrementAiUsage,

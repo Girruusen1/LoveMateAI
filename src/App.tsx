@@ -73,6 +73,7 @@ import { ReferralCenterView } from './components/growth/ReferralCenterView';
 import { CustomerSupportView } from './components/support/CustomerSupportView';
 import { AppProvider, useApp } from './context/AppContext';
 import type { ActiveTab } from './types';
+import { PAGE_PLAN } from './utils/plans';
 import { FeatureGate } from './components/common/FeatureGate';
 import { GenAIStatusBanner } from './components/common/GenAIStatusBanner';
 
@@ -97,12 +98,23 @@ const PAGE_NAMES: Partial<Record<ActiveTab, string>> = {
 };
 
 const MainContent: React.FC = () => {
-  const { activeTab, user } = useApp();
+  const { activeTab, user, hasPlan } = useApp();
 
   if (!user && !PUBLIC_PAGES.has(activeTab)) {
     return (
       <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <FeatureGate requireAuth featureName={PAGE_NAMES[activeTab] ?? 'LoveMate'}>
+          {null}
+        </FeatureGate>
+      </main>
+    );
+  }
+
+  const neededPlan = PAGE_PLAN[activeTab];
+  if (user && neededPlan && !hasPlan(neededPlan)) {
+    return (
+      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <FeatureGate plan={neededPlan} featureName={PAGE_NAMES[activeTab] ?? 'This tool'}>
           {null}
         </FeatureGate>
       </main>
