@@ -71,6 +71,7 @@ import { AdminDashboardView } from './components/admin/AdminDashboardView';
 import { TrustSafetyCenterView } from './components/trust/TrustSafetyCenterView';
 import { ReferralCenterView } from './components/growth/ReferralCenterView';
 import { CustomerSupportView } from './components/support/CustomerSupportView';
+import { LegalView } from './components/legal/LegalView';
 import { AppProvider, useApp } from './context/AppContext';
 import type { ActiveTab } from './types';
 import { PAGE_PLAN } from './utils/plans';
@@ -83,7 +84,7 @@ const LogoModalHost: React.FC = () => {
 };
 
 /** Pages anyone can open. Every tool needs a free account (the landing page has a live demo to try first). */
-const PUBLIC_PAGES = new Set<ActiveTab>(['home', 'pro', 'trust-center']);
+const PUBLIC_PAGES = new Set<ActiveTab>(['home', 'pro', 'trust-center', 'terms', 'privacy', 'refund', 'contact']);
 
 /** Names for the sign-in prompt, taken from the menu. */
 const PAGE_NAMES: Partial<Record<ActiveTab, string>> = {
@@ -95,6 +96,11 @@ const PAGE_NAMES: Partial<Record<ActiveTab, string>> = {
   library: 'Saved library',
   profile: 'Profile',
   referrals: 'Invite friends',
+  support: 'Support',
+  terms: 'Terms & Conditions',
+  privacy: 'Privacy Policy',
+  refund: 'Refund & Cancellation Policy',
+  contact: 'Contact us',
 };
 
 const MainContent: React.FC = () => {
@@ -193,6 +199,12 @@ const MainContent: React.FC = () => {
       {activeTab === 'trust-center' && <TrustSafetyCenterView />}
       {activeTab === 'referrals' && <ReferralCenterView />}
       {activeTab === 'support' && <CustomerSupportView />}
+
+      {/* Legal & business pages (public) */}
+      {activeTab === 'terms' && <LegalView page={activeTab} />}
+      {activeTab === 'privacy' && <LegalView page={activeTab} />}
+      {activeTab === 'refund' && <LegalView page={activeTab} />}
+      {activeTab === 'contact' && <LegalView page={activeTab} />}
 
       {/* Vault & Account */}
       {activeTab === 'library' && (<FeatureGate requireAuth featureName="Saved library"><SavedLibraryView /></FeatureGate>)}

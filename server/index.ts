@@ -1,5 +1,5 @@
 /**
- * Production server: serves the built app from ./dist and the GenAI API under /api/ai.
+ * Production server: serves the built app from ./dist, the GenAI API under /api/ai and payments under /api/pay.
  *   npm run build && npm start
  * Requires Node 22.6+ (runs TypeScript directly via type stripping).
  */
@@ -7,6 +7,7 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
 import { handleGenAI } from './genai/handler.ts';
+import { handlePayments, paymentsEnabled } from './payments/handler.ts';
 import { isConfigured, modelFor, providerChain } from './genai/config.ts';
 
 const DIST = resolve(process.cwd(), 'dist');
@@ -39,6 +40,7 @@ async function serveStatic(pathname: string): Promise<{ body: Buffer; type: stri
 createServer(async (req, res) => {
   try {
     if (await handleGenAI(req, res)) return;
+    if (await handlePayments(req, res)) return;
     const url = new URL(req.url ?? '/', 'http://localhost');
     const asset = (await serveStatic(url.pathname)) ?? (await serveStatic('/index.html')); // SPA fallback
     if (!asset) {
@@ -57,4 +59,5 @@ createServer(async (req, res) => {
 }).listen(PORT, () => {
   console.log(`LoveMate running on http://localhost:${PORT}`);
   console.log(isConfigured() ? `GenAI providers (in failover order): ${providerChain().map((id) => `${id} (${modelFor(id)})`).join(' -> ')}` : 'GenAI disabled (set GROQ_API_KEY and/or OPENROUTER_API_KEY for free AI); the app runs in demo mode.');
+  console.log(paymentsEnabled() ? 'Payments: Razorpay subscriptions enabled' : 'Payments: off (set RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET and SUPABASE_SECRET_KEY)');
 });

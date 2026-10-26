@@ -1015,7 +1015,12 @@ export type ActiveTab =
   // Master V5 Tabs:
   | 'trust-center'
   | 'referrals'
-  | 'support';
+  | 'support'
+  // Legal / business pages (public):
+  | 'terms'
+  | 'privacy'
+  | 'refund'
+  | 'contact';
 
 // ========================
 // MASTER V5 DATA MODELS

@@ -53,6 +53,17 @@ export interface CloudCouple {
 
 let account: CloudAccount | null = null;
 let couple: CloudCouple | null = null;
+
+/** A plan paid through Razorpay, as saved by the server after a verified payment. */
+export interface PaidSubscription {
+  user_id: string;
+  plan: 'plus' | 'couple';
+  cycle: 'monthly' | 'yearly' | null;
+  status: string;
+  current_end: string | null;
+  razorpay_subscription_id: string | null;
+}
+let paidPlans: { mine: PaidSubscription | null; partner: PaidSubscription | null } = { mine: null, partner: null };
 let syncing = false;
 let recoveryPending = false;
 /** True when this sign-in created the account's first cloud data (used to start onboarding). */
@@ -191,6 +202,7 @@ async function hydrate(u: AuthUser) {
     rawRemove(COUPLE_KEY);
   }
 
+  await loadPaidPlans(u.id);
   rawSet(OWNER_KEY, u.id);
   account = toAccount(u);
   syncing = true;
@@ -237,6 +249,33 @@ export async function bootstrapCloud(): Promise<void> {
 export const cloudAccount = () => account;
 export const cloudIsNewAccount = () => newAccount;
 export const cloudCouple = () => couple;
+export const cloudPaidPlans = () => paidPlans;
+
+/** Reads this user's paid plan and the partner's (the table only lets you see those two rows). */
+async function loadPaidPlans(userId: string) {
+  if (!sb) return;
+  const { data, error } = await sb.from('subscriptions').select('user_id,plan,cycle,status,current_end,razorpay_subscription_id');
+  if (error) {
+    // The table may not exist yet (schema not re-run); plans then come from this device only.
+    console.warn('[cloud] could not read paid plans:', error.message);
+    return;
+  }
+  const rows = (data ?? []) as PaidSubscription[];
+  paidPlans = { mine: rows.find((r) => r.user_id === userId) ?? null, partner: rows.find((r) => r.user_id !== userId) ?? null };
+}
+
+/** Re-read paid plans, e.g. right after a payment. */
+export async function refreshPaidPlans() {
+  if (account) await loadPaidPlans(account.id);
+  return paidPlans;
+}
+
+/** The signed-in user's access token, for server calls that must know who is asking. */
+export async function cloudAccessToken(): Promise<string | null> {
+  if (!sb) return null;
+  const { data } = await sb.auth.getSession();
+  return data.session?.access_token ?? null;
+}
 export const takePasswordRecovery = () => {
   const r = recoveryPending;
   recoveryPending = false;

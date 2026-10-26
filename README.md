@@ -35,6 +35,10 @@ npm start                      # serves dist/ and the AI API on http://localhost
 | `LOVEMATE_PUBLIC_URL` | Your site address, sent to OpenRouter to identify the app. |
 | `LOVEMATE_MODEL` | Model to use. Default `claude-opus-5-5`. `claude-sonnet-5-5` or `claude-haiku-5-5` cost less. |
 | `LOVEMATE_RATE_LIMIT` | AI requests allowed per IP per minute. Default 30. |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase project for real accounts, cloud sync and partner linking. Run `supabase/schema.sql` once in the SQL Editor. Without them, data stays in the browser. |
+| `SUPABASE_SECRET_KEY` | Server only. Lets the payment server save verified plans to the `subscriptions` table. |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Razorpay API keys (start with Test Mode). Turns on real Plus/Couple subscriptions with UPI AutoPay and cards; Razorpay plans are created automatically. |
+| `RAZORPAY_WEBHOOK_SECRET` | Secret of the webhook pointing at `/api/pay/webhook` (subscription events), so renewals, failures and cancellations update the plan. |
 
 ## How the generative AI works
 

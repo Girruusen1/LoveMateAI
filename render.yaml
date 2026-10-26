@@ -15,6 +15,14 @@ services:
         sync: false
       - key: LOVEMATE_PUBLIC_URL
         sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
       # Public Supabase values, needed at build time (the browser uses them).
       - key: VITE_SUPABASE_URL
         value: https://ajkcwnadugrdwygtxlkm.supabase.co

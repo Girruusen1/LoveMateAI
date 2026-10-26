@@ -204,3 +204,31 @@ begin
   end if;
 end;
 $$;
+
+-- ---------------------------------------------------------------- paid plans (Razorpay)
+-- Written only by the server after a verified payment (with the secret key). Users can read their own
+-- plan and their partner's (a Couple plan paid by one partner covers both), but never change it.
+
+create table if not exists public.subscriptions (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  plan text not null check (plan in ('plus', 'couple')),
+  cycle text check (cycle in ('monthly', 'yearly')),
+  status text not null,
+  current_end timestamptz,
+  razorpay_subscription_id text unique,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.subscriptions enable row level security;
+
+drop policy if exists "read own or partner plan" on public.subscriptions;
+create policy "read own or partner plan" on public.subscriptions
+  for select to authenticated
+  using (
+    user_id = auth.uid()
+    or exists (
+      select 1 from public.couple_members me
+      join public.couple_members partner on partner.couple_id = me.couple_id
+      where me.user_id = auth.uid() and partner.user_id = subscriptions.user_id
+    )
+  );

@@ -26,9 +26,14 @@ export const ProModal: React.FC = () => {
     trialDaysLeft,
     planFromPartner,
     aiUsageToday,
+    paymentsLive,
+    paidSubscription,
+    startPaidCheckout,
+    cancelPaidPlan,
   } = useApp();
 
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
+  const [busy, setBusy] = useState<Plan | null>(null);
 
   if (!proModalOpen) return null;
 
@@ -40,9 +45,21 @@ export const ProModal: React.FC = () => {
       showToast(`Create a free account first. New accounts get ${TRIAL_DAYS} days of Plus free.`, 'info');
       return;
     }
+    if (tier !== 'free' && paymentsLive) {
+      setBusy(tier);
+      void startPaidCheckout(tier, billingCycle).then((ok) => {
+        setBusy(null);
+        if (ok) setProModalOpen(false);
+      });
+      return;
+    }
     upgradeSubscription(tier);
     setProModalOpen(false);
   };
+
+  const endDate = paidSubscription?.current_end
+    ? new Date(paidSubscription.current_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null;
 
   // The plan you pay for (a trial counts as Free here, so "Choose Plus" stays available).
   const paidPlan: Plan = trialDaysLeft !== null || planFromPartner ? 'free' : plan;
@@ -158,7 +175,7 @@ export const ProModal: React.FC = () => {
 
                     {t.id !== 'free' && (
                       <button
-                        disabled={isCurrent}
+                        disabled={isCurrent || busy !== null}
                         onClick={() => handleSelectPlan(t.id)}
                         className={`w-full mt-4 py-2 rounded-xl text-xs font-bold transition-all ${
                           isCurrent
@@ -168,7 +185,7 @@ export const ProModal: React.FC = () => {
                               : 'bg-zinc-900 hover:bg-black text-white'
                         }`}
                       >
-                        {isCurrent ? 'Current plan' : `Choose ${p.name}`}
+                        {isCurrent ? 'Current plan' : busy === t.id ? 'Opening secure checkout…' : `Choose ${p.name}`}
                       </button>
                     )}
                   </div>
@@ -181,14 +198,41 @@ export const ProModal: React.FC = () => {
           <div className="p-4 bg-zinc-50 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
             <div className="flex items-center gap-1.5">
               <Shield className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Payments aren't live yet: during the beta, choosing a plan is free.</span>
+              <span>
+                {paymentsLive
+                  ? 'Secure payments by Razorpay: UPI, cards and netbanking. Renews automatically; cancel anytime.'
+                  : "Payments aren't live yet: during the beta, choosing a plan is free."}
+              </span>
             </div>
-            {paidPlan !== 'free' && !userSubscription.cancelAtPeriodEnd && (
-              <button onClick={cancelSubscription} className="text-xs font-bold text-rose-600 hover:underline shrink-0">
-                Cancel plan
-              </button>
+            {paymentsLive ? (
+              paidSubscription && paidSubscription.status === 'cancelling' ? (
+                <span className="text-xs font-bold text-amber-700">Renewal off{endDate ? ` · active until ${endDate}` : ''}</span>
+              ) : (
+                paidSubscription &&
+                paidSubscription.status === 'active' && (
+                  <div className="flex items-center gap-3 shrink-0">
+                    {endDate && <span className="text-xs text-zinc-500">Renews {endDate}</span>}
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Stop automatic renewal? Your plan stays active until the end of the paid period.')) void cancelPaidPlan();
+                      }}
+                      className="text-xs font-bold text-rose-600 hover:underline"
+                    >
+                      Cancel renewal
+                    </button>
+                  </div>
+                )
+              )
+            ) : (
+              <>
+                {paidPlan !== 'free' && !userSubscription.cancelAtPeriodEnd && (
+                  <button onClick={cancelSubscription} className="text-xs font-bold text-rose-600 hover:underline shrink-0">
+                    Cancel plan
+                  </button>
+                )}
+                {userSubscription.cancelAtPeriodEnd && <span className="text-xs font-bold text-amber-700">Cancellation scheduled at period end</span>}
+              </>
             )}
-            {userSubscription.cancelAtPeriodEnd && <span className="text-xs font-bold text-amber-700">Cancellation scheduled at period end</span>}
           </div>
         </div>
       </div>

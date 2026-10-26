@@ -92,9 +92,11 @@ import {
   PLANS,
   TRIAL_DAYS,
   normalizePlan,
+  type PaidPlan,
   type Plan,
   type UsageBucket,
 } from '../utils/plans';
+import { cancelRenewal, checkout, getPaymentStatus, type Cycle } from '../services/payments';
 import { hashPassword, loadAccounts, saveAccounts, type LocalAccount } from '../utils/accounts';
 import {
   cloudAccount,
@@ -105,6 +107,9 @@ import {
   cloudIsNewAccount,
   cloudJoinCouple,
   cloudLeaveCouple,
+  cloudPaidPlans,
+  refreshPaidPlans,
+  type PaidSubscription,
   cloudSignIn,
   cloudSignOut,
   cloudSignUp,
@@ -326,6 +331,13 @@ interface AppContextType {
   planFromPartner: boolean;
   /** Free plan: AI uses so far today per kind of tool. */
   aiUsageToday: Record<UsageBucket, number>;
+  /** True when Razorpay is set up on the server; plans then come only from verified payments. */
+  paymentsLive: boolean;
+  /** This user's own paid subscription, if any. */
+  paidSubscription: PaidSubscription | null;
+  /** Opens Razorpay; resolves true once the payment is verified. */
+  startPaidCheckout: (plan: PaidPlan, cycle: Cycle) => Promise<boolean>;
+  cancelPaidPlan: () => Promise<void>;
   upgradeSubscription: (tier: SubscriptionTierV5) => void;
   cancelSubscription: () => void;
   incrementAiUsage: () => void;
@@ -979,8 +991,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [couplePlan, setCouplePlan] = useState<{ by: string } | null>(() => readJSON<{ by: string } | null>(STORAGE_KEY_COUPLE_PLAN, null));
   const trialEnd = userSubscription.status === 'trialing' && userSubscription.trialEndsAt ? Date.parse(userSubscription.trialEndsAt) : null;
   const trialExpired = trialEnd !== null && trialEnd <= Date.now();
-  const ownPlan: Plan = trialExpired ? 'free' : normalizePlan(userSubscription.tier);
-  const planFromPartner = !!couplePlan && couplePlan.by !== user?.id && !!user?.partnerConnected && ownPlan !== 'couple';
+  // With live payments a paid plan only comes from a verified Razorpay payment (saved by the server);
+  // during the beta (no payments) the plan chosen in the pricing window is used as is.
+  const [paymentsLive, setPaymentsLive] = useState(false);
+  const [paid, setPaid] = useState(() => cloudPaidPlans());
+  const paidActive = (r: PaidSubscription | null): r is PaidSubscription =>
+    !!r && ['active', 'cancelling', 'past_due'].includes(r.status) && (!r.current_end || Date.parse(r.current_end) > Date.now());
+  const trialPlan: Plan = userSubscription.status === 'trialing' && !trialExpired ? 'plus' : 'free';
+  const ownPlan: Plan = paymentsLive
+    ? paidActive(paid.mine) ? (PLAN_RANK[paid.mine.plan] >= PLAN_RANK[trialPlan] ? paid.mine.plan : trialPlan) : trialPlan
+    : trialExpired ? 'free' : normalizePlan(userSubscription.tier);
+  const partnerPays = paymentsLive
+    ? paidActive(paid.partner) && paid.partner.plan === 'couple'
+    : !!couplePlan && couplePlan.by !== user?.id;
+  const planFromPartner = partnerPays && !!user?.partnerConnected && ownPlan !== 'couple';
   const plan: Plan = planFromPartner ? 'couple' : ownPlan;
   const hasPlan = (needed: Plan) => PLAN_RANK[plan] >= PLAN_RANK[needed];
   const trialDaysLeft = trialEnd !== null && !trialExpired ? Math.max(1, Math.ceil((trialEnd - Date.now()) / 86_400_000)) : null;
@@ -995,6 +1019,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     replies: usageCounts.replies ?? 0,
     confession: usageCounts.confession ?? 0,
     other: usageCounts.other ?? 0,
+  };
+
+  useEffect(() => {
+    void getPaymentStatus().then((s) => setPaymentsLive(s.enabled));
+  }, []);
+
+  const startPaidCheckout = async (p: PaidPlan, cycle: Cycle): Promise<boolean> => {
+    const res = await checkout(p, cycle, { name: user?.name, email: user?.email });
+    if (!res.ok) {
+      if (!res.cancelled) showToast(res.message, 'info');
+      return false;
+    }
+    setPaid({ ...(await refreshPaidPlans()) });
+    setUserSubscription((prev) => ({ ...prev, tier: res.plan, status: 'active', trialEndsAt: undefined, monthlyPrice: PLANS[res.plan].monthlyINR }));
+    triggerConfetti();
+    showToast(
+      res.plan === 'couple' ? 'Payment successful! LoveMate Couple is active for you and your partner.' : 'Payment successful! Welcome to LoveMate Plus.',
+      'love'
+    );
+    return true;
+  };
+
+  const cancelPaidPlan = async () => {
+    const id = paid.mine?.razorpay_subscription_id;
+    if (!id) return;
+    const r = await cancelRenewal(id);
+    if (!r.ok) {
+      showToast(r.message ?? 'Could not cancel right now. Please try again.', 'info');
+      return;
+    }
+    setPaid({ ...(await refreshPaidPlans()) });
+    showToast('Renewal cancelled. Your plan stays active until the end of the paid period.', 'info');
   };
 
   const startPlusTrial = () => {
@@ -2706,6 +2762,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         trialDaysLeft,
         planFromPartner,
         aiUsageToday,
+        paymentsLive,
+        paidSubscription: paid.mine,
+        startPaidCheckout,
+        cancelPaidPlan,
         upgradeSubscription,
         cancelSubscription,
         incrementAiUsage,

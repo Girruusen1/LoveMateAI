@@ -14,6 +14,14 @@ const LINKS: { label: string; tab: ActiveTab; member?: boolean }[] = [
   { label: 'Support', tab: 'support', member: true },
 ];
 
+/** Policy pages: always visible (required for payment-gateway review). */
+const LEGAL_LINKS: { label: string; tab: ActiveTab }[] = [
+  { label: 'Terms', tab: 'terms' },
+  { label: 'Privacy', tab: 'privacy' },
+  { label: 'Refunds', tab: 'refund' },
+  { label: 'Contact', tab: 'contact' },
+];
+
 export const Footer: React.FC = () => {
   const { user, setActiveTab, setProModalOpen, openAuthModal } = useApp();
 
@@ -47,7 +55,16 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="mt-6 pt-5 border-t border-zinc-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-zinc-500">
-          <p>© {new Date().getFullYear()} LoveMate AI</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <p>© {new Date().getFullYear()} LoveMate AI</p>
+            <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Policies">
+              {LEGAL_LINKS.map((l) => (
+                <button key={l.tab} onClick={() => setActiveTab(l.tab)} className="hover:text-zinc-900 transition-colors">
+                  {l.label}
+                </button>
+              ))}
+            </nav>
+          </div>
           <p>LoveMate offers relationship insights and playful advice. It is not a substitute for professional counseling.</p>
         </div>
       </div>
