@@ -663,7 +663,7 @@ export interface SmartNotification {
   id: string;
   title: string;
   body: string;
-  type: 'date' | 'challenge' | 'memory' | 'partner' | 'suggestion';
+  type: 'date' | 'challenge' | 'memory' | 'partner' | 'suggestion' | 'account';
   isRead: boolean;
   timestamp: string;
   actionTab?: ActiveTab;
@@ -1016,6 +1016,7 @@ export type ActiveTab =
   | 'trust-center'
   | 'referrals'
   | 'support'
+  | 'notification-settings'
   // Legal / business pages (public):
   | 'terms'
   | 'privacy'

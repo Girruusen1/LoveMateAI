@@ -97,6 +97,19 @@ import {
   type UsageBucket,
 } from '../utils/plans';
 import { cancelRenewal, checkout, getPaymentStatus, type Cycle } from '../services/payments';
+import { getNotifyStatus, reportEvent, sendTestEmail } from '../services/notifyClient';
+import {
+  dueReminders,
+  inQuietHours,
+  istDate,
+  normalizePrefs,
+  renderNotification,
+  wantsChannel,
+  type Channel,
+  type NotificationData,
+  type NotificationPrefs,
+  type NotificationType,
+} from '../../shared/notifications';
 import { hashPassword, loadAccounts, saveAccounts, type LocalAccount } from '../utils/accounts';
 import {
   cloudAccount,
@@ -246,6 +259,16 @@ interface AppContextType {
   markNotificationAsRead: (id: string) => void;
   dismissNotification: (id: string) => void;
   clearAllNotifications: () => void;
+  /** Which notifications the user wants, on which channel (website, email, browser pop-up). */
+  notificationPrefs: NotificationPrefs;
+  setNotificationChannel: (type: NotificationType, channel: Channel, on: boolean) => void;
+  setQuietHours: (quietHours: NotificationPrefs['quietHours']) => void;
+  /** Browser pop-up permission for this site. */
+  browserNotifications: NotificationPermission | 'unsupported';
+  enableBrowserNotifications: () => Promise<boolean>;
+  /** True when the server can send emails. */
+  emailNotificationsAvailable: boolean;
+  sendTestNotificationEmail: () => Promise<{ ok: boolean; message?: string }>;
   notificationsModalOpen: boolean;
   setNotificationsModalOpen: (open: boolean) => void;
   magicButtonModalOpen: boolean;
@@ -511,6 +534,8 @@ const STORAGE_KEY_FEATURE_FLAGS = 'lovemate_flags_v4';
 
 // V5 Storage Keys
 const STORAGE_KEY_SUBSCRIPTION = 'lovemate_subscription_v5';
+const STORAGE_KEY_NOTIFY_PREFS = 'lovemate_notify_prefs_v1';
+const STORAGE_KEY_NOTIFY_SEEN = 'lovemate_notify_seen_v1';
 const STORAGE_KEY_COUPLE_PLAN = 'lovemate_couple_plan_v1';
 const STORAGE_KEY_AI_USAGE = 'lovemate_ai_usage_v1';
 const STORAGE_KEY_AI_MODELS = 'lovemate_ai_models_v5';
@@ -856,6 +881,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return [];
   });
 
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>(() => normalizePrefs(readJSON(STORAGE_KEY_NOTIFY_PREFS, null)));
+  /** Reminders already shown, so a dismissed one doesn't come back. */
+  const seenNotificationKeys = React.useRef<Set<string>>(new Set(readJSON<string[]>(STORAGE_KEY_NOTIFY_SEEN, [])));
+  const [browserNotifications, setBrowserNotifications] = useState<NotificationPermission | 'unsupported'>(() =>
+    typeof Notification === 'undefined' ? 'unsupported' : Notification.permission
+  );
+  const [emailNotificationsAvailable, setEmailNotificationsAvailable] = useState(false);
+
   const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
   const [magicButtonModalOpen, setMagicButtonModalOpen] = useState(false);
   const [referralInvites, setReferralInvites] = useState<ReferralInvite[]>([]);
@@ -1033,6 +1066,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     setPaid({ ...(await refreshPaidPlans()) });
     setUserSubscription((prev) => ({ ...prev, tier: res.plan, status: 'active', trialEndsAt: undefined, monthlyPrice: PLANS[res.plan].monthlyINR }));
+    notify(
+      'payment_success',
+      {
+        planName: PLANS[res.plan].name,
+        amount: `₹${cycle === 'yearly' ? PLANS[res.plan].yearlyINR : PLANS[res.plan].monthlyINR}`,
+        endDate: res.currentEnd ? new Date(res.currentEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : undefined,
+      },
+      `payment:${res.currentEnd ?? Date.now()}`
+    );
     triggerConfetti();
     showToast(
       res.plan === 'couple' ? 'Payment successful! LoveMate Couple is active for you and your partner.' : 'Payment successful! Welcome to LoveMate Plus.',
@@ -1438,6 +1480,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!user || !trialExpired) return;
     setUserSubscription((prev) => ({ ...prev, tier: 'free', status: 'active', trialEndsAt: undefined }));
     showToast(`Your ${TRIAL_DAYS}-day Plus trial has ended. Plus stays unlimited for ₹${PLANS.plus.monthlyINR}/month.`, 'info');
+    notify('trial_ended', {}, `trial_ended:${userSubscription.trialEndsAt}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, trialExpired]);
 
@@ -1567,7 +1610,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (flash?.message) showToast(flash.message, 'love');
     if (flash?.onboarding) setOnboardingOpen(true);
-    if (flash && (flash as { trial?: boolean }).trial) startPlusTrial();
+    if (flash && (flash as { trial?: boolean }).trial) {
+      startPlusTrial();
+      notify('welcome', {}, `welcome:${user?.id}`);
+      reportEvent('welcome', user?.name);
+    }
     // First sign-in through Google (no flash message, the page came back from Google).
     if (!flash && cloudIsNewAccount() && user) {
       showToast(`Welcome to LoveMate, ${user.name}! Your ${TRIAL_DAYS}-day Plus trial has started.`, 'love');
@@ -1612,11 +1659,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       [STORAGE_KEY_REAL_STORY]: parse(setOurRealStory),
       [STORAGE_KEY_COUPLE_PLAN]: parse(setCouplePlan),
     };
-    const offShared = onSharedChange((key, raw) => setters[key]?.(raw));
+    const ACTIVITY: Record<string, string> = {
+      [STORAGE_KEY_SHARED_MEMORIES]: 'added a memory to Our Space',
+      [STORAGE_KEY_SHARED_PLANS]: 'added a plan',
+      [STORAGE_KEY_SHARED_GOALS]: 'updated your shared goals',
+      [STORAGE_KEY_COUPLE_JOURNAL]: 'wrote in your couple journal',
+      [STORAGE_KEY_CALENDAR]: 'updated the couple calendar',
+      [STORAGE_KEY_WISHLIST]: 'added to your wishlist',
+      [STORAGE_KEY_DATES]: 'added an important date',
+    };
+    const offShared = onSharedChange((key, raw) => {
+      setters[key]?.(raw);
+      // One "partner activity" notification per kind per day, so edits don't flood the bell.
+      if (ACTIVITY[key]) notify('partner_activity', { activity: ACTIVITY[key] }, `activity:${key}:${istDate(new Date())}`);
+    });
     const offPartner = onPartnerJoined((name) => {
       setUser((prev) => (prev ? { ...prev, partnerConnected: true, partnerName: name } : prev));
       setCoupleRoom((r) => (r ? { ...r, status: 'connected', partnerName: name, expiresAt: 'Linked' } : r));
       showToast(`${name} joined your couple space! 💞`, 'love');
+      notify('partner_joined', { partnerName: name }, `partner_joined:${name}`);
       triggerConfetti();
       if (planRef.current !== 'couple') {
         setTimeout(
@@ -1929,6 +1990,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       void cloudJoinCouple(normalized, user?.name || 'Partner').then((res) => {
         if ('error' in res) return showToast(COUPLE_ERRORS[res.error], 'info');
         // Reload so every screen starts from the shared space.
+        reportEvent('partner_joined', user?.name);
         reloadWith('Connected with your partner! Your shared space is ready 👫');
       });
       return true;
@@ -2211,6 +2273,115 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
+  const NOTIFICATION_KIND: Record<NotificationType, SmartNotification['type']> = {
+    welcome: 'suggestion',
+    date_reminder: 'date',
+    streak_reminder: 'challenge',
+    partner_joined: 'partner',
+    partner_activity: 'partner',
+    trial_ending: 'account',
+    trial_ended: 'account',
+    payment_success: 'account',
+    renewal_reminder: 'account',
+    payment_failed: 'account',
+  };
+
+  /** Show a notification on the website (bell) and, when the tab is in the background, as a browser pop-up. */
+  const notify = (type: NotificationType, data: NotificationData, key = `${type}:${Date.now()}`) => {
+    if (seenNotificationKeys.current.has(key)) return;
+    seenNotificationKeys.current.add(key);
+    localStorage.setItem(STORAGE_KEY_NOTIFY_SEEN, JSON.stringify([...seenNotificationKeys.current].slice(-300)));
+    const n = renderNotification(type, { userName: user?.name, partnerName: user?.partnerName, ...data });
+    if (wantsChannel(notificationPrefs, type, 'inApp')) {
+      setNotifications((prev) => [
+        {
+          id: key,
+          title: `${n.emoji} ${n.title}`,
+          body: n.body,
+          type: NOTIFICATION_KIND[type],
+          isRead: false,
+          timestamp: new Date().toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }),
+          actionTab: n.actionTab as ActiveTab,
+        },
+        ...prev,
+      ].slice(0, 100));
+    }
+    if (
+      wantsChannel(notificationPrefs, type, 'browser') &&
+      typeof Notification !== 'undefined' &&
+      Notification.permission === 'granted' &&
+      document.visibilityState === 'hidden' &&
+      !inQuietHours(notificationPrefs, new Date())
+    ) {
+      try {
+        const popup = new Notification(n.title, { body: n.body, icon: '/brand/favicon-128.png', tag: key });
+        popup.onclick = () => {
+          window.focus();
+          setActiveTab(n.actionTab as ActiveTab);
+          popup.close();
+        };
+      } catch {
+        /* some mobile browsers only allow pop-ups from a service worker */
+      }
+    }
+  };
+
+  const setNotificationChannel = (type: NotificationType, channel: Channel, on: boolean) => {
+    setNotificationPrefs((prev) => ({ ...prev, channels: { ...prev.channels, [type]: { ...prev.channels[type], [channel]: on } } }));
+  };
+  const setQuietHours = (quietHours: NotificationPrefs['quietHours']) => setNotificationPrefs((prev) => ({ ...prev, quietHours }));
+
+  const enableBrowserNotifications = async () => {
+    if (typeof Notification === 'undefined') {
+      showToast("This browser doesn't support notifications.", 'info');
+      return false;
+    }
+    const result = await Notification.requestPermission();
+    setBrowserNotifications(result);
+    if (result === 'granted') {
+      new Notification('LoveMate notifications are on 💗', { body: "We'll remind you about the dates and moments that matter.", icon: '/brand/favicon-128.png' });
+      return true;
+    }
+    showToast('Notifications are blocked for this site. You can allow them in your browser settings.', 'info');
+    return false;
+  };
+
+  const sendTestNotificationEmail = () => sendTestEmail(user?.name);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_NOTIFY_PREFS, JSON.stringify(notificationPrefs));
+  }, [notificationPrefs]);
+
+  useEffect(() => {
+    void getNotifyStatus().then((s) => setEmailNotificationsAvailable(s.email));
+  }, []);
+
+  // Scheduled reminders (same rules the server uses for emails): checked on load and every 30 minutes.
+  const reminderInputRef = React.useRef<() => void>(() => {});
+  reminderInputRef.current = () => {
+    if (!user) return;
+    const due = dueReminders(
+      {
+        userName: user.name,
+        partnerName: user.partnerName,
+        importantDates,
+        subscription: userSubscription,
+        paid: paid.mine,
+        streak: user.streak,
+        lastActive: readJSON<{ lastActive?: string }>(STORAGE_KEY_DAILY, {}).lastActive,
+      },
+      new Date()
+    );
+    for (const d of due) notify(d.type, d.data, d.key);
+  };
+  useEffect(() => {
+    if (!user) return;
+    reminderInputRef.current();
+    const t = setInterval(() => reminderInputRef.current(), 30 * 60 * 1000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, importantDates, userSubscription.status, paid.mine?.current_end]);
+
   const clearAllNotifications = () => {
     setNotifications([]);
     showToast('Notifications cleared', 'info');
@@ -2290,6 +2461,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     closeAuthModal();
     setOnboardingOpen(true);
     startPlusTrial();
+    notify('welcome', { userName: u.name }, `welcome:${u.id}`);
     showToast(`Account created. Your ${TRIAL_DAYS}-day Plus trial has started.`, 'love');
     return 'ok';
   };
@@ -2704,6 +2876,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         markNotificationAsRead,
         dismissNotification,
         clearAllNotifications,
+        notificationPrefs,
+        setNotificationChannel,
+        setQuietHours,
+        browserNotifications,
+        enableBrowserNotifications,
+        emailNotificationsAvailable,
+        sendTestNotificationEmail,
         notificationsModalOpen,
         setNotificationsModalOpen,
         magicButtonModalOpen,

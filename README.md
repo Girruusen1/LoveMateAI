@@ -39,6 +39,7 @@ npm start                      # serves dist/ and the AI API on http://localhost
 | `SUPABASE_SECRET_KEY` | Server only. Lets the payment server save verified plans to the `subscriptions` table. |
 | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Razorpay API keys (start with Test Mode). Turns on real Plus/Couple subscriptions with UPI AutoPay and cards; Razorpay plans are created automatically. |
 | `RAZORPAY_WEBHOOK_SECRET` | Secret of the webhook pointing at `/api/pay/webhook` (subscription events), so renewals, failures and cancellations update the plan. |
+| `SMTP_USER`, `SMTP_PASS` (+ `SMTP_HOST`, `SMTP_PORT`, `MAIL_FROM`) | Email notifications with Nodemailer (Gmail App Password by default): reminders, partner joined, trial and payment emails. Needs `SUPABASE_SECRET_KEY`. Templates preview at `/api/notify/preview`. Render free blocks SMTP, so use a VPS. |
 
 ## How the generative AI works
 

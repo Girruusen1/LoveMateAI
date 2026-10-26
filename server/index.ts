@@ -8,6 +8,8 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
 import { handleGenAI } from './genai/handler.ts';
 import { handlePayments, paymentsEnabled } from './payments/handler.ts';
+import { handleNotify } from './notify/handler.ts';
+import { notificationsEnabled, runReminders } from './notify/service.ts';
 import { isConfigured, modelFor, providerChain } from './genai/config.ts';
 
 const DIST = resolve(process.cwd(), 'dist');
@@ -41,6 +43,7 @@ createServer(async (req, res) => {
   try {
     if (await handleGenAI(req, res)) return;
     if (await handlePayments(req, res)) return;
+    if (await handleNotify(req, res)) return;
     const url = new URL(req.url ?? '/', 'http://localhost');
     const asset = (await serveStatic(url.pathname)) ?? (await serveStatic('/index.html')); // SPA fallback
     if (!asset) {
@@ -59,5 +62,17 @@ createServer(async (req, res) => {
 }).listen(PORT, () => {
   console.log(`LoveMate running on http://localhost:${PORT}`);
   console.log(isConfigured() ? `GenAI providers (in failover order): ${providerChain().map((id) => `${id} (${modelFor(id)})`).join(' -> ')}` : 'GenAI disabled (set GROQ_API_KEY and/or OPENROUTER_API_KEY for free AI); the app runs in demo mode.');
+  console.log(notificationsEnabled() ? 'Email notifications: on (hourly reminders)' : 'Email notifications: off (set SMTP_USER, SMTP_PASS and SUPABASE_SECRET_KEY)');
   console.log(paymentsEnabled() ? 'Payments: Razorpay subscriptions enabled' : 'Payments: off (set RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET and SUPABASE_SECRET_KEY)');
 });
+
+// Hourly reminder emails (birthdays, trial ending, renewals, streaks). The server stays on, so no outside cron is needed.
+const HOUR = 60 * 60 * 1000;
+if (process.env.LOVEMATE_SCHEDULER !== 'off') {
+  setInterval(() => {
+    if (!notificationsEnabled()) return;
+    runReminders()
+      .then((r) => r.sent && console.log(`[notify] reminders sent: ${r.sent} (users ${r.users}, skipped ${r.skipped}, errors ${r.errors})`))
+      .catch((e) => console.warn('[notify] reminder run failed:', (e as Error).message));
+  }, HOUR).unref();
+}

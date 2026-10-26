@@ -15,6 +15,7 @@
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { notifyEvent } from '../notify/service.ts';
 
 type PaidPlan = 'plus' | 'couple';
 type Cycle = 'monthly' | 'yearly';
@@ -117,6 +118,14 @@ interface RzpSubscription {
   status: string;
   current_end?: number | null;
   notes?: Record<string, string>;
+}
+
+/** Receipt / problem emails; never blocks or fails the payment itself. */
+function paymentEmail(user: { id: string; email: string }, kind: 'payment_success' | 'payment_failed', row: SubscriptionRow, key: string) {
+  const endDate = row.current_end ? new Date(row.current_end).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : undefined;
+  const data = { planName: row.plan === 'plus' ? 'Plus' : 'Couple', amount: `₹${PRICES[row.plan][row.cycle] / 100}`, endDate, autoRenew: row.status === 'active' };
+  if (!user.email) return;
+  void notifyEvent(user, kind, data, key).catch((e) => console.warn('[pay] receipt email failed:', (e as Error).message));
 }
 
 const planName = (plan: PaidPlan, cycle: Cycle) => `LoveMate ${plan === 'plus' ? 'Plus' : 'Couple'} (${cycle})`;
@@ -239,7 +248,13 @@ export async function handlePayments(req: IncomingMessage, res: ServerResponse):
       const event = JSON.parse(raw) as { event: string; payload?: { subscription?: { entity?: RzpSubscription } } };
       const sub = event.payload?.subscription?.entity;
       if (sub && event.event.startsWith('subscription.')) {
-        await syncFromRazorpay(sub).catch((e) => console.warn('[pay] webhook not applied:', (e as Error).message));
+        const row = await syncFromRazorpay(sub).catch((e) => {
+          console.warn('[pay] webhook not applied:', (e as Error).message);
+          return null;
+        });
+        const who = row && sub.notes?.email ? { id: row.user_id, email: sub.notes.email } : null;
+        if (who && row && event.event === 'subscription.charged') paymentEmail(who, 'payment_success', row, `charged:${sub.id}:${row.current_end}`);
+        if (who && row && (event.event === 'subscription.halted' || event.event === 'subscription.pending')) paymentEmail(who, 'payment_failed', row, `failed:${sub.id}:${new Date().toISOString().slice(0, 10)}`);
       }
       send(res, 200, { ok: true });
       return true;
@@ -307,6 +322,7 @@ export async function handlePayments(req: IncomingMessage, res: ServerResponse):
         razorpay_subscription_id: orderId,
       };
       await saveSubscription(row);
+      paymentEmail(user, 'payment_success', row, `payment:${paymentId}`);
       send(res, 200, { plan: row.plan, status: row.status, currentEnd: row.current_end });
       return true;
     }
@@ -321,6 +337,7 @@ export async function handlePayments(req: IncomingMessage, res: ServerResponse):
       const sub = await razorpay<RzpSubscription>('GET', `/subscriptions/${encodeURIComponent(subscriptionId)}`);
       if (sub.notes?.user_id !== user.id) throw new PayError(403, 'This payment belongs to another account.');
       const row = await syncFromRazorpay(sub, user.id, 'active');
+      paymentEmail(user, 'payment_success', row, `payment:${paymentId}`);
       send(res, 200, { plan: row.plan, status: row.status, currentEnd: row.current_end });
       return true;
     }

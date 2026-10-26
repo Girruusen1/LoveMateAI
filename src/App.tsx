@@ -72,6 +72,7 @@ import { TrustSafetyCenterView } from './components/trust/TrustSafetyCenterView'
 import { ReferralCenterView } from './components/growth/ReferralCenterView';
 import { CustomerSupportView } from './components/support/CustomerSupportView';
 import { LegalView } from './components/legal/LegalView';
+import { NotificationSettingsView } from './components/notifications/NotificationSettingsView';
 import { AppProvider, useApp } from './context/AppContext';
 import type { ActiveTab } from './types';
 import { PAGE_PLAN } from './utils/plans';
@@ -97,6 +98,7 @@ const PAGE_NAMES: Partial<Record<ActiveTab, string>> = {
   profile: 'Profile',
   referrals: 'Invite friends',
   support: 'Support',
+  'notification-settings': 'Notification settings',
   terms: 'Terms & Conditions',
   privacy: 'Privacy Policy',
   refund: 'Refund & Cancellation Policy',
@@ -199,6 +201,7 @@ const MainContent: React.FC = () => {
       {activeTab === 'trust-center' && <TrustSafetyCenterView />}
       {activeTab === 'referrals' && <ReferralCenterView />}
       {activeTab === 'support' && <CustomerSupportView />}
+      {activeTab === 'notification-settings' && <NotificationSettingsView />}
 
       {/* Legal & business pages (public) */}
       {activeTab === 'terms' && <LegalView page={activeTab} />}

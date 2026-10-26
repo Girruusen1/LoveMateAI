@@ -232,3 +232,17 @@ create policy "read own or partner plan" on public.subscriptions
       where me.user_id = auth.uid() and partner.user_id = subscriptions.user_id
     )
   );
+
+-- ---------------------------------------------------------------- notifications
+-- What the server already emailed, so a reminder is never sent twice. Server only (no policies).
+
+create table if not exists public.notification_log (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  key text not null,
+  type text not null,
+  channel text not null default 'email',
+  sent_at timestamptz not null default now(),
+  primary key (user_id, key, channel)
+);
+
+alter table public.notification_log enable row level security;

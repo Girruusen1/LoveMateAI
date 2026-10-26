@@ -4,7 +4,7 @@ export const ALL_TABS: ActiveTab[] = [
   'home', 'chat', 'calculator', 'confession', 'reply', 'crush-analyzer', 'should-confess', 'relationship-helper', 'games', 'date-gift', 'stories', 'library', 'profile', 'pro',
   'decode', 'screenshot', 'roleplay', 'couple-mode', 'timeline', 'our-story', 'health-check', 'chemistry-mode', 'what-if', 'voice-chat', 'date-planner', 'message-transformer', 'relationship-signals', 'love-cards', 'important-dates', 'challenges',
   'memory-center', 'relationship-dashboard', 'relationship-patterns', 'detective', 'our-space', 'scrapbook', 'our-story-movie', 'couple-coach', 'long-distance', 'infinite-games', 'conversation-coach', 'reply-copilot', 'communication-coach', 'wrapped', 'relationship-dna', 'wingman-mode', 'gift-intelligence', 'trip-together',
-  'copilot', 'agent-activity', 'autopilot', 'couple-calendar', 'wishlist', 'marketplace', 'admin-hub', 'trust-center', 'referrals', 'support',
+  'copilot', 'agent-activity', 'autopilot', 'couple-calendar', 'wishlist', 'marketplace', 'admin-hub', 'trust-center', 'referrals', 'support', 'notification-settings',
   'terms', 'privacy', 'refund', 'contact',
 ];
 

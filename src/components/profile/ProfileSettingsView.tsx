@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import {
   Award,
+  Bell,
+  ChevronRight,
   Check,
   Flame,
   Globe,
@@ -33,6 +35,7 @@ export const ProfileSettingsView: React.FC = () => {
     deleteAccount,
     showToast,
     plan,
+    setActiveTab,
   } = useApp();
 
   const isPro = plan !== 'free';
@@ -313,6 +316,22 @@ export const ProfileSettingsView: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* NOTIFICATIONS */}
+      <button
+        type="button"
+        onClick={() => setActiveTab('notification-settings')}
+        className="w-full bg-white rounded-3xl p-5 sm:p-6 border border-zinc-200/90 shadow-xs flex items-center gap-4 text-left hover:border-rose-200 transition-colors"
+      >
+        <span className="w-10 h-10 shrink-0 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center">
+          <Bell className="w-4 h-4" />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-base font-bold text-zinc-900">Notifications</span>
+          <span className="block text-xs text-zinc-500 mt-0.5">Choose reminders by website, email or browser pop-up, and set quiet hours.</span>
+        </span>
+        <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+      </button>
 
       {/* 5. PRIVACY, DATA & SECURITY (Requirement 26) */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/90 shadow-xs space-y-4">
