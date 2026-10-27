@@ -3,7 +3,6 @@ import {
   Activity,
   Bell,
   BookHeart,
-  BookOpen,
   Brain,
   Calculator,
   Calendar,
@@ -353,7 +352,6 @@ export const Navbar: React.FC = () => {
                   <ul className="py-1.5 text-sm">
                     {[
                       { label: 'Profile & settings', tab: 'profile' as ActiveTab, icon: <User /> },
-                      { label: 'Saved library', tab: 'library' as ActiveTab, icon: <BookOpen /> },
                       { label: 'Trust & safety', tab: 'trust-center' as ActiveTab, icon: <Shield /> },
                       { label: 'Referrals', tab: 'referrals' as ActiveTab, icon: <Gift /> },
                       { label: 'Support', tab: 'support' as ActiveTab, icon: <Headphones /> },

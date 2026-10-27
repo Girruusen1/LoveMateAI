@@ -11,7 +11,6 @@ const LINKS: { label: string; tab: ActiveTab; member?: boolean }[] = [
   { label: 'Ask LoveMate', tab: 'copilot', member: true },
   { label: 'Our Space', tab: 'our-space', member: true },
   { label: 'Calendar', tab: 'couple-calendar', member: true },
-  { label: 'Saved library', tab: 'library', member: true },
   { label: 'Trust & safety', tab: 'trust-center' },
   { label: 'Support', tab: 'support', member: true },
 ];

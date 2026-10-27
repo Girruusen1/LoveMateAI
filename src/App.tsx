@@ -58,7 +58,6 @@ const MyKundliView = lazyView(() => import('./components/jyotish/MyKundliView').
 const RashifalView = lazyView(() => import('./components/jyotish/RashifalView').then((m) => m.RashifalView));
 
 // Account, support, admin, legal
-const SavedLibraryView = lazyView(() => import('./components/library/SavedLibraryView').then((m) => m.SavedLibraryView));
 const ProfileSettingsView = lazyView(() => import('./components/profile/ProfileSettingsView').then((m) => m.ProfileSettingsView));
 const NotificationSettingsView = lazyView(() => import('./components/notifications/NotificationSettingsView').then((m) => m.NotificationSettingsView));
 const ReferralCenterView = lazyView(() => import('./components/growth/ReferralCenterView').then((m) => m.ReferralCenterView));
@@ -113,7 +112,6 @@ const PAGES: Partial<Record<ActiveTab, React.ComponentType<PageProps>>> = {
   calculator: LoveCalculatorView,
 
   // Account, support, admin
-  library: () => (<FeatureGate requireAuth featureName="Saved library"><SavedLibraryView /></FeatureGate>),
   profile: () => (<FeatureGate requireAuth featureName="Profile"><ProfileSettingsView /></FeatureGate>),
   'notification-settings': NotificationSettingsView,
   referrals: ReferralCenterView,
@@ -143,7 +141,6 @@ const PAGE_NAMES: Partial<Record<ActiveTab, string>> = {
   copilot: 'Ask LoveMate',
   'our-space': 'Our Space',
   'couple-calendar': 'Couple calendar',
-  library: 'Saved library',
   profile: 'Profile',
   referrals: 'Invite friends',
   support: 'Support',
@@ -169,7 +166,12 @@ const MainContent: React.FC = () => {
   // "#/pro" is the pricing window, not a page: open it over the home page.
   useEffect(() => {
     if (RETIRED_TABS.has(activeTab)) {
-      showToast('That page has been retired. Everything you need is on your home page.', 'info');
+      showToast(
+        activeTab === 'library'
+          ? 'Saved items now live inside each tool (confessions, replies, cards…). Open a tool and scroll down to find them.'
+          : 'That page has been retired. Everything you need is on your home page.',
+        'info'
+      );
       setActiveTab('home');
     } else if (activeTab === 'pro') {
       setActiveTab('home');

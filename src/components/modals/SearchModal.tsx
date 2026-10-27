@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   ArrowRight,
-  Bookmark,
   Calendar,
   Gamepad2,
   Heart,
@@ -51,7 +50,6 @@ export const SearchModal: React.FC = () => {
     { title: 'Our Space', tab: 'our-space', category: 'Main', icon: <Heart /> },
     { title: 'Couple calendar', tab: 'couple-calendar', category: 'Main', icon: <Calendar /> },
     ...EXPLORE_GROUPS.flatMap((g) => g.items.map((i) => ({ title: i.label, tab: i.tab, category: g.title, icon: i.icon }))),
-    { title: 'Saved library', tab: 'library', category: 'Account', icon: <Bookmark /> },
     { title: 'Profile & settings', tab: 'profile', category: 'Account', icon: <Users /> },
     { title: 'Trust & safety', tab: 'trust-center', category: 'Account', icon: <Sprout /> },
     { title: 'Referrals', tab: 'referrals', category: 'Account', icon: <Gamepad2 /> },

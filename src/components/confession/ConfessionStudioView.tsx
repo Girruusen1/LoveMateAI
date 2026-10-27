@@ -27,6 +27,7 @@ import {
   Select,
   ToolLayout,
 } from '../common/UIPrimitives';
+import { SavedConfessions } from '../common/SavedItems';
 
 export const ConfessionStudioView: React.FC = () => {
   const { user, saveConfession, openShareModal, showToast, triggerConfetti } = useApp();
@@ -165,7 +166,7 @@ export const ConfessionStudioView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            <Button variant="ghost" size="sm" onClick={handleSave} title="Save to library" icon={<Bookmark className="w-4 h-4" />}>
+            <Button variant="ghost" size="sm" onClick={handleSave} title="Save this confession" icon={<Bookmark className="w-4 h-4" />}>
               Save
             </Button>
             <Button
@@ -240,6 +241,8 @@ export const ConfessionStudioView: React.FC = () => {
           description: 'Choose a recipient, tone and language on the left, then generate.',
         }}
       />
+
+      <SavedConfessions />
     </PageContainer>
   );
 };

@@ -16,6 +16,7 @@ import {
   PageHeader,
   ToolLayout,
 } from '../common/UIPrimitives';
+import { SavedLoveCards } from '../common/SavedItems';
 
 export const LoveCardsView: React.FC = () => {
   const { user, saveLoveCard, openShareModal, addPoints, showToast, triggerConfetti } = useApp();
@@ -216,6 +217,8 @@ export const LoveCardsView: React.FC = () => {
           description: 'Pick an occasion and a theme on the left to see the card here.',
         }}
       />
+
+      <SavedLoveCards />
     </PageContainer>
   );
 };

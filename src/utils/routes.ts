@@ -14,7 +14,7 @@ export const ALL_TABS: ActiveTab[] = [
   // Jyotish
   'kundli', 'my-kundli', 'rashifal', 'calculator',
   // Account, support, admin
-  'library', 'profile', 'notification-settings', 'referrals', 'support', 'trust-center', 'admin-hub',
+  'profile', 'notification-settings', 'referrals', 'support', 'trust-center', 'admin-hub',
   // Legal / business pages
   'terms', 'privacy', 'refund', 'contact',
 ];
@@ -66,6 +66,8 @@ export const ALIASES: Partial<Record<ActiveTab, TabAlias>> = {
   marketplace: { tab: 'home' },
   'agent-activity': { tab: 'home' },
   autopilot: { tab: 'home' },
+  // Saved items now live inside the tool that made them (confessions, replies, cards...).
+  library: { tab: 'home' },
 };
 
 /** Every old id that still resolves (the keys of ALIASES). */

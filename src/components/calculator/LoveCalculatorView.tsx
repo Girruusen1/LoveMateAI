@@ -10,6 +10,7 @@ import { AIService } from '../../services/ai';
 import { offlineCompatibility, type CompatibilityInput } from '../../services/aiContentAstro';
 import { CompatibilityResult } from '../../types';
 import { ShareCardButton } from '../common/ShareCardButton';
+import { SavedCompatibility } from '../common/SavedItems';
 import { isAiLimitError } from '../../utils/aiErrors';
 import { Button, Card, Chip, FieldLabel, Input, PageContainer, PageHeader, ToolLayout } from '../common/UIPrimitives';
 import { BirthDetailsForm, JyotishNote, LanguageChips } from '../jyotish/JyotishCommon';
@@ -371,6 +372,8 @@ export const LoveCalculatorView: React.FC = () => {
           description: mode === 'fun' ? 'Enter both names, answer a few quick questions and see your compatibility.' : 'Enter both birth details for a Guna Milan based score.',
         }}
       />
+
+      <SavedCompatibility />
     </PageContainer>
   );
 };

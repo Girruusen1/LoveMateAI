@@ -32,6 +32,7 @@ import {
   SectionHeading,
   ToolLayout,
 } from '../common/UIPrimitives';
+import { SavedReplies } from '../common/SavedItems';
 
 export const ReplyGeneratorView: React.FC = () => {
   const { addPoints, showToast, saveReplyItem } = useApp();
@@ -242,6 +243,8 @@ export const ReplyGeneratorView: React.FC = () => {
           description: 'Paste the message you received and choose a vibe to get three suggestions.',
         }}
       />
+
+      <SavedReplies />
     </PageContainer>
   );
 };

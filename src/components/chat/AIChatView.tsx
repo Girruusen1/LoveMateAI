@@ -21,6 +21,7 @@ import { AIService } from '../../services/ai';
 import { AIMessage, AIPersonality, Language } from '../../types';
 import { LoveMateLogo } from '../common/LoveMateLogo';
 import { Badge, Button, Card, Chip, Input, PageContainer, PageHeader, Select } from '../common/UIPrimitives';
+import { SavedChats, type SavedChat } from '../common/SavedItems';
 
 const CHAT_DRAFT_KEY = 'lovemate_chat_draft_v1';
 
@@ -224,7 +225,7 @@ export const AIChatView: React.FC = () => {
     }
   };
 
-  const handleSaveToLibrary = () => {
+  const handleSaveChat = () => {
     if (messages.length <= 1) {
       showToast('No conversation to save yet!', 'info');
       return;
@@ -232,6 +233,17 @@ export const AIChatView: React.FC = () => {
     const title = messages.find((m) => m.role === 'user')?.content.slice(0, 32) + '...' || 'AI Chat Session';
     saveChatConversation(title, messages);
     triggerConfetti();
+  };
+
+  /** Load a saved chat back into the window so the user can keep talking from where it ended. */
+  const handleOpenSavedChat = (chat: SavedChat) => {
+    if (isTyping) return;
+    setFeedback({});
+    setMessages(chat.messages);
+    const first = chat.messages.find((m) => m.personality)?.personality;
+    if (first) setPersonality(first);
+    showToast(`Opened "${chat.title}"`, 'info');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleRegenerate = async () => {
@@ -279,7 +291,7 @@ export const AIChatView: React.FC = () => {
               <Sparkles className="w-3 h-3" />
               {aiMemoryEnabled ? `Memory (${memories.length})` : 'Memory off'}
             </Badge>
-            <Button variant="secondary" size="sm" icon={<Bookmark className="w-3.5 h-3.5" />} onClick={handleSaveToLibrary}>
+            <Button variant="secondary" size="sm" icon={<Bookmark className="w-3.5 h-3.5" />} onClick={handleSaveChat}>
               Save
             </Button>
             <Button variant="ghost" size="sm" icon={<Trash2 className="w-3.5 h-3.5" />} onClick={handleClear}>
@@ -481,6 +493,8 @@ export const AIChatView: React.FC = () => {
           </p>
         </div>
       </Card>
+
+      <SavedChats onOpen={handleOpenSavedChat} />
     </PageContainer>
   );
 };

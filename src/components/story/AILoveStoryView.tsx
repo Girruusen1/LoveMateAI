@@ -16,6 +16,7 @@ import {
   Select,
   ToolLayout,
 } from '../common/UIPrimitives';
+import { SavedStories } from '../common/SavedItems';
 
 export const AILoveStoryView: React.FC = () => {
   const { user, saveStory, addPoints, showToast, triggerConfetti } = useApp();
@@ -113,7 +114,7 @@ export const AILoveStoryView: React.FC = () => {
           Write chapter {episodes.length + 1}
         </Button>
         <Button variant="secondary" className="w-full" onClick={handleSaveFullStory} icon={<Bookmark className="w-3.5 h-3.5" />}>
-          Save story to library
+          Save story
         </Button>
       </div>
     </Card>
@@ -159,6 +160,8 @@ export const AILoveStoryView: React.FC = () => {
           description: 'Fill in the details on the left and write the first chapter.',
         }}
       />
+
+      <SavedStories />
     </PageContainer>
   );
 };

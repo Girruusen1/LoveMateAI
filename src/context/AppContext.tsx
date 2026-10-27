@@ -1969,7 +1969,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const saveConfession = (item: ConfessionItem) => {
     setSavedConfessions((prev) => [item, ...prev]);
     addPoints(20, 'Saved Confession');
-    showToast('Confession saved to Library ❤️', 'love');
+    showToast('Confession saved. Find it below the tool ❤️', 'love');
     triggerConfetti();
   };
 
@@ -2009,12 +2009,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setSavedChats((prev) => [item, ...prev]);
     addPoints(15, 'Saved AI Chat');
-    showToast('Conversation saved to Library', 'love');
+    showToast('Chat saved. Find it under Saved chats', 'love');
   };
 
   const deleteSavedChat = (id: string) => {
     setSavedChats((prev) => prev.filter((c) => c.id !== id));
-    showToast('Chat removed from Library', 'info');
+    showToast('Saved chat removed', 'info');
   };
 
   const saveReplyItem = (item: ReplySuggestion) => {
