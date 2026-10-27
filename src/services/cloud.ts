@@ -39,10 +39,17 @@ export const SHARED_KEYS = new Set([
   'lovemate_couple_plan_v1',
 ]);
 
+/** Per-person shared keys (each partner writes only their own, so two phones never overwrite each other). */
+export const SHARED_PREFIX = 'lovemate_couple_quiz_v1:';
+export const isSharedKey = (k: string) => SHARED_KEYS.has(k) || k.startsWith(SHARED_PREFIX);
+const sharedKeysOnDevice = () => [...SHARED_KEYS, ...Object.keys(localStorage).filter((k) => k.startsWith(SHARED_PREFIX))];
+
 export interface CloudAccount {
   id: string;
   email: string;
   name: string;
+  phone?: string;
+  whatsappOptIn?: boolean;
 }
 export interface CloudCouple {
   id: string;
@@ -110,7 +117,7 @@ export async function flush(): Promise<void> {
   const batch = [...pending];
   pending.clear();
   const now = new Date().toISOString();
-  const target = (k: string) => (couple && SHARED_KEYS.has(k) ? 'couple' : 'user');
+  const target = (k: string) => (couple && isSharedKey(k) ? 'couple' : 'user');
   const upsertUser = batch.filter(([k, v]) => v !== null && target(k) === 'user').map(([key, value]) => ({ user_id: account!.id, key, value, updated_at: now }));
   const upsertCouple = batch
     .filter(([k, v]) => v !== null && target(k) === 'couple')
@@ -159,6 +166,8 @@ const toAccount = (u: AuthUser): CloudAccount => ({
   id: u.id,
   email: u.email ?? '',
   name: String(u.user_metadata?.name ?? u.user_metadata?.full_name ?? '').trim() || (u.email ?? 'friend').split('@')[0],
+  phone: typeof u.user_metadata?.phone === 'string' ? u.user_metadata.phone : undefined,
+  whatsappOptIn: u.user_metadata?.whatsapp_opt_in === true,
 });
 
 /** Load the account's data into localStorage. First sign-in uploads what is already on the device. */
@@ -301,12 +310,15 @@ export async function cloudSignIn(email: string, password: string): Promise<Sign
   return 'ok';
 }
 
-export async function cloudSignUp(name: string, email: string, password: string): Promise<SignUpResult> {
+export async function cloudSignUp(name: string, email: string, password: string, extras: { phone?: string; whatsappOptIn?: boolean } = {}): Promise<SignUpResult> {
   if (!sb) return 'error';
   const { data, error } = await sb.auth.signUp({
     email: email.trim(),
     password,
-    options: { data: { name: name.trim() }, emailRedirectTo: window.location.origin },
+    options: {
+      data: { name: name.trim(), ...(extras.phone ? { phone: extras.phone, whatsapp_opt_in: !!extras.whatsappOptIn } : {}) },
+      emailRedirectTo: window.location.origin,
+    },
   });
   if (error) {
     if (error.code === 'user_already_exists' || /already registered/i.test(error.message)) return 'exists';
@@ -432,7 +444,7 @@ export async function cloudCreateCouple(displayName: string): Promise<{ code: st
   couple = { id: row.couple_id, inviteCode: row.invite_code, partnerName: null, createdByMe: true };
   rawSet(COUPLE_KEY, row.couple_id);
   if (isNew) {
-    for (const k of SHARED_KEYS) {
+    for (const k of sharedKeysOnDevice()) {
       const v = localStorage.getItem(k);
       lastSynced.delete(k);
       if (v !== null) queue(k, v);
@@ -462,10 +474,56 @@ export async function cloudLeaveCouple(): Promise<boolean> {
   couple = null;
   rawRemove(COUPLE_KEY);
   // Keep the shared data on this device as a personal copy from now on.
-  for (const k of SHARED_KEYS) {
+  for (const k of sharedKeysOnDevice()) {
     const v = localStorage.getItem(k);
     lastSynced.delete(k);
     if (v !== null) queue(k, v);
   }
   return true;
 }
+
+// ------------------------------------------------------------------ support tickets & referrals
+
+export interface CloudTicket {
+  id: string;
+  category: string;
+  subject: string;
+  description: string;
+  status: string;
+  reply: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Saves a ticket the LoveMate team can read and answer (Row Level Security: you see only your own). */
+export async function cloudCreateTicket(t: { category: string; subject: string; description: string }): Promise<CloudTicket | null> {
+  if (!sb || !account) return null;
+  const { data, error } = await sb
+    .from('support_tickets')
+    .insert({ user_id: account.id, email: account.email, category: t.category, subject: t.subject.slice(0, 200), description: t.description.slice(0, 5000) })
+    .select()
+    .single();
+  if (error) {
+    console.warn('[cloud] ticket not saved:', error.message);
+    return null;
+  }
+  return data as CloudTicket;
+}
+
+export async function cloudMyTickets(): Promise<CloudTicket[]> {
+  if (!sb || !account) return [];
+  const { data, error } = await sb.from('support_tickets').select('*').order('created_at', { ascending: false });
+  return error ? [] : ((data ?? []) as CloudTicket[]);
+}
+
+/** People who joined with my invite code (and whether I joined with someone's). */
+export async function cloudMyReferrals(): Promise<{ invited: string[]; wasReferred: boolean }> {
+  if (!sb || !account) return { invited: [], wasReferred: false };
+  const { data, error } = await sb.from('referrals').select('referrer_id,referred_id,created_at');
+  if (error) return { invited: [], wasReferred: false };
+  const rows = (data ?? []) as { referrer_id: string; referred_id: string; created_at: string }[];
+  return { invited: rows.filter((r) => r.referrer_id === account!.id).map((r) => r.created_at), wasReferred: rows.some((r) => r.referred_id === account!.id) };
+}
+
+/** Same formula as the server: everyone's invite code comes from their account id. */
+export const myReferralCode = () => (account ? 'LM-' + account.id.replace(/-/g, '').slice(0, 8).toUpperCase() : null);

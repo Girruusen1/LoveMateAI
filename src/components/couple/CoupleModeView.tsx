@@ -87,6 +87,9 @@ export const CoupleModeView: React.FC = () => {
     incrementCoupleStreak,
     addPoints,
     showToast,
+    coupleQuizAnswers,
+    setMyQuizAnswer,
+    coupleQuizLive,
   } = useApp();
 
   const [inputCode, setInputCode] = useState('');
@@ -141,16 +144,31 @@ export const CoupleModeView: React.FC = () => {
     writeStorage(QUIZ_KEY, JSON.stringify(quiz));
   }, [quiz]);
 
-  const myAnsweredCount = questions.filter((q) => quiz.mine[q.id]).length;
-  const partnerAnsweredCount = questions.filter((q) => quiz.partner[q.id]).length;
+  // Linked accounts: each partner answers on their own phone and the answers sync live.
+  // Without accounts, the partner's answers are entered on this device (the old way).
+  const answers: { mine: Record<string, Choice>; partner: Record<string, Choice> } =
+    coupleQuizLive && user
+      ? {
+          mine: coupleQuizAnswers[user.id] ?? {},
+          partner: Object.entries(coupleQuizAnswers).find(([id]) => id !== user.id)?.[1] ?? {},
+        }
+      : quiz;
+  const myAnsweredCount = questions.filter((q) => answers.mine[q.id]).length;
+  const partnerAnsweredCount = questions.filter((q) => answers.partner[q.id]).length;
   const pairs = questions
-    .filter((q) => quiz.mine[q.id] && quiz.partner[q.id])
-    .map((q) => ({ q, mine: quiz.mine[q.id], partner: quiz.partner[q.id] }));
+    .filter((q) => answers.mine[q.id] && answers.partner[q.id])
+    .map((q) => ({ q, mine: answers.mine[q.id], partner: answers.partner[q.id] }));
   const matched = pairs.filter((p) => p.mine === p.partner);
   const differed = pairs.filter((p) => p.mine !== p.partner);
   const optionText = (q: (typeof questions)[number], c: Choice) => (c === 'A' ? q.optionA : q.optionB);
 
   const handleSelectAnswer = (qId: string, choice: Choice) => {
+    if (coupleQuizLive) {
+      const firstTime = !answers.mine[qId];
+      setMyQuizAnswer(qId, choice);
+      if (firstTime) addPoints(10, 'Answered Couple Question');
+      return;
+    }
     const firstTime = !quiz.mine[qId];
     setQuiz((prev) => ({ ...prev, mine: { ...prev.mine, [qId]: choice } }));
     if (firstTime) addPoints(10, 'Answered Couple Question');
@@ -351,8 +369,8 @@ export const CoupleModeView: React.FC = () => {
 
             <div className="space-y-5">
               {questions.map((q) => {
-                const myAns = quiz.mine[q.id];
-                const partnerAns = quiz.partner[q.id];
+                const myAns = answers.mine[q.id];
+                const partnerAns = answers.partner[q.id];
                 const bothAnswered = !!myAns && !!partnerAns;
                 const isMatch = bothAnswered && myAns === partnerAns;
 
@@ -389,6 +407,11 @@ export const CoupleModeView: React.FC = () => {
                       <span className="font-semibold">{partnerDisplayName}:</span>
                       {!isConnected ? (
                         <span className="italic">Waiting for partner</span>
+                      ) : coupleQuizLive ? (
+                        // Their choice stays hidden until you have answered too, so neither copies the other.
+                        <span className={partnerAns ? 'font-semibold text-purple-700' : 'italic'}>
+                          {partnerAns ? (myAns ? `picked ${partnerAns}` : 'has answered. Pick yours to reveal it') : "hasn't answered yet on their phone"}
+                        </span>
                       ) : (
                         (['A', 'B'] as const).map((choice) => (
                           <button

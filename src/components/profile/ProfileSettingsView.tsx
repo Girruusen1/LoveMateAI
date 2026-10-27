@@ -45,12 +45,24 @@ export const ProfileSettingsView: React.FC = () => {
   const [editingLanguage, setEditingLanguage] = useState<Language>(user?.preferredLanguage || 'hinglish');
   const [editingVibe, setEditingVibe] = useState(user?.vibe || 'Romantic & Playful');
 
+  const [editingPhone, setEditingPhone] = useState(user?.phone ?? '');
+  const [editingWhatsapp, setEditingWhatsapp] = useState(!!user?.whatsappOptIn);
+  // Indian mobile number: 10 digits starting 6-9, with or without +91 / spaces.
+  const phoneDigits = editingPhone.replace(/[\s-]/g, '').replace(/^(\+91|0091|91(?=\d{10}$)|0)/, '');
+  const phoneValid = /^[6-9]\d{9}$/.test(phoneDigits);
+
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
+    if (editingPhone.trim() && !phoneValid) {
+      showToast('Please enter a valid 10-digit Indian mobile number, or leave it empty.', 'info');
+      return;
+    }
     updateUserPreferences({
       name: editingName,
       preferredLanguage: editingLanguage,
       vibe: editingVibe,
+      phone: editingPhone.trim() ? '+91' + phoneDigits : undefined,
+      whatsappOptIn: editingPhone.trim() ? editingWhatsapp : false,
     });
   };
 
@@ -303,6 +315,31 @@ export const ProfileSettingsView: React.FC = () => {
                 onChange={(e) => setEditingVibe(e.target.value)}
                 className="w-full px-3 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 font-semibold focus:outline-hidden"
               />
+            </div>
+
+            <div>
+              <label htmlFor="profile-phone" className="block text-xs font-bold text-zinc-700 mb-1">
+                Mobile number <span className="font-normal text-zinc-400">(optional)</span>
+              </label>
+              <input
+                id="profile-phone"
+                type="tel"
+                inputMode="numeric"
+                value={editingPhone}
+                onChange={(e) => setEditingPhone(e.target.value.replace(/[^\d\s+-]/g, '').slice(0, 16))}
+                placeholder="+91 98765 43210"
+                className="w-full px-3 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 font-semibold focus:outline-hidden"
+              />
+              <label className="mt-2 flex items-start gap-2 text-[11px] text-zinc-600">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 accent-rose-600"
+                  checked={editingWhatsapp && phoneValid}
+                  disabled={!phoneValid}
+                  onChange={(e) => setEditingWhatsapp(e.target.checked)}
+                />
+                <span>Send me reminders on WhatsApp. You can turn this off anytime.</span>
+              </label>
             </div>
           </div>
 

@@ -34,6 +34,7 @@ const SAMPLE: Record<NotificationType, NotificationData> = {
   payment_success: { userName: 'Priya', planName: 'Plus', amount: '₹149', endDate: '25 Nov 2026', autoRenew: true },
   renewal_reminder: { userName: 'Priya', planName: 'Plus', amount: '₹149', endDate: '25 Nov 2026', autoRenew: true },
   payment_failed: { userName: 'Priya', planName: 'Plus' },
+  support_reply: { userName: 'Priya', ticketSubject: 'Couple sync not working', replyText: 'Thanks for the details! Please sign out and in again on both phones; your shared space will sync within a minute.' },
 };
 
 function send(res: ServerResponse, status: number, body: unknown) {

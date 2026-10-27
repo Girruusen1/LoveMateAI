@@ -17,6 +17,9 @@ export interface User {
   goals: string[];
   partnerName?: string;
   partnerConnected?: boolean;
+  /** Optional mobile number (+91…), only with consent; used for WhatsApp reminders later. */
+  phone?: string;
+  whatsappOptIn?: boolean;
 }
 
 export interface AIMessage {

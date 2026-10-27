@@ -28,7 +28,7 @@ export const ReferralCenterView: React.FC = () => {
   const [inputCode, setInputCode] = useState('');
   const [previewCard, setPreviewCard] = useState<'compatibility' | 'love_card' | 'wrapped'>('compatibility');
 
-  const referralLink = `https://lovemate.ai/invite?code=${referralStats.referralCode}`;
+  const referralLink = `${window.location.origin}/?ref=${referralStats.referralCode}`;
 
   const handleCopyCode = async () => {
     const ok = await copyText(referralStats.referralCode);
@@ -78,7 +78,7 @@ export const ReferralCenterView: React.FC = () => {
     },
   };
 
-  const inviteText = `Join me on LoveMate! Use my code ${referralStats.referralCode} for a bonus: ${referralLink}`;
+  const inviteText = `Join me on LoveMate, the AI wingman for love 💗 Sign up with my link and we both get 7 days of Plus free: ${referralLink}`;
 
   const handleShareToSocials = async () => {
     const card = previewContent[previewCard];
@@ -136,7 +136,7 @@ export const ReferralCenterView: React.FC = () => {
       <PageHeader
         icon={<Gift />}
         title="Referrals"
-        subtitle="Invite friends or your partner. You get 100 Love Points for every friend who joins, and unlock dual-sync badges when your partner links accounts."
+        subtitle="Invite friends with your link. When a friend signs up, you both get 7 days of LoveMate Plus free (up to 10 friends), plus 100 Love Points."
       />
 
       {/* Stats */}
@@ -214,7 +214,7 @@ export const ReferralCenterView: React.FC = () => {
                 className="flex-1 font-mono uppercase"
               />
               <Button type="submit" variant="primary" className="shrink-0">
-                Claim +100 pts
+                Claim 7 days of Plus
               </Button>
             </div>
           </form>

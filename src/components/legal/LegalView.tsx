@@ -278,7 +278,8 @@ const PRIVACY: Section[] = [
         items={[
           <>
             <Strong>Account details</Strong>: your name and email address, and your login method (email or Google
-            sign-in).
+            sign-in). Optionally your mobile number, if you choose to add it; we use it for WhatsApp reminders only
+            when you tick that option, and you can remove it or turn reminders off anytime in your profile.
           </>,
           <>
             <Strong>What you type into tools</Strong>: messages, questions and descriptions you submit so the AI can

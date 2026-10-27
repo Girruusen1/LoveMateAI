@@ -246,3 +246,49 @@ create table if not exists public.notification_log (
 );
 
 alter table public.notification_log enable row level security;
+
+-- ---------------------------------------------------------------- support tickets
+-- People create and read their own tickets; the team reads all of them and replies through the server.
+
+create table if not exists public.support_tickets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  email text,
+  category text not null default 'technical_bug',
+  subject text not null check (length(subject) <= 200),
+  description text not null check (length(description) <= 5000),
+  status text not null default 'open',
+  reply text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.support_tickets enable row level security;
+
+drop policy if exists "create own tickets" on public.support_tickets;
+create policy "create own tickets" on public.support_tickets
+  for insert to authenticated
+  with check (user_id = auth.uid() and status = 'open' and reply is null);
+
+drop policy if exists "read own tickets" on public.support_tickets;
+create policy "read own tickets" on public.support_tickets
+  for select to authenticated
+  using (user_id = auth.uid());
+
+-- ---------------------------------------------------------------- referrals
+-- One row per person who joined with someone's invite code. Written only by the server, which also
+-- gives both people free Plus days (a "bonus" row in subscriptions).
+
+create table if not exists public.referrals (
+  referred_id uuid primary key references auth.users (id) on delete cascade,
+  referrer_id uuid not null references auth.users (id) on delete cascade,
+  code text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.referrals enable row level security;
+
+drop policy if exists "read my referrals" on public.referrals;
+create policy "read my referrals" on public.referrals
+  for select to authenticated
+  using (referrer_id = auth.uid() or referred_id = auth.uid());

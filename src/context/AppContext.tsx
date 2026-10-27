@@ -98,6 +98,7 @@ import {
 } from '../utils/plans';
 import { cancelRenewal, checkout, getPaymentStatus, type Cycle } from '../services/payments';
 import { getNotifyStatus, reportEvent, sendTestEmail } from '../services/notifyClient';
+import { checkAdmin, claimReferral } from '../services/accountClient';
 import {
   dueReminders,
   inQuietHours,
@@ -122,6 +123,12 @@ import {
   cloudLeaveCouple,
   cloudPaidPlans,
   refreshPaidPlans,
+  cloudCreateTicket,
+  cloudMyTickets,
+  cloudMyReferrals,
+  myReferralCode,
+  SHARED_PREFIX,
+  type CloudTicket,
   type PaidSubscription,
   cloudSignIn,
   cloudSignOut,
@@ -148,7 +155,17 @@ interface AppContextType {
     email: string,
     options?: { password?: string; name?: string; provider?: 'google' | 'otp' }
   ) => Promise<'ok' | 'no_account' | 'wrong_password' | 'not_confirmed' | 'error'>;
-  signup: (name: string, email: string, password: string) => Promise<'ok' | 'exists' | 'confirm_email' | 'error'>;
+  signup: (
+    name: string,
+    email: string,
+    password: string,
+    extras?: { phone?: string; whatsappOptIn?: boolean }
+  ) => Promise<'ok' | 'exists' | 'confirm_email' | 'error'>;
+  /** Couple quiz answers per person (user id → question id → choice), synced live between partners. */
+  coupleQuizAnswers: Record<string, Record<string, 'A' | 'B'>>;
+  setMyQuizAnswer: (questionId: string, choice: 'A' | 'B') => void;
+  /** True when both partners are linked through accounts, so the quiz runs on two phones. */
+  coupleQuizLive: boolean;
   setPasswordForEmail: (email: string, password: string) => Promise<boolean>;
   accountExists: (email: string) => boolean;
   logout: () => void;
@@ -456,8 +473,9 @@ const todayKey = () => new Date().toISOString().slice(0, 10);
 
 export type AuthModalMode = 'login' | 'signup' | 'forgot' | 'verify' | 'reset';
 
-const newUserRecord = (name: string, email: string, id: string = uid('usr')): User => ({
+const newUserRecord = (name: string, email: string, id: string = uid('usr'), extras: { phone?: string; whatsappOptIn?: boolean } = {}): User => ({
   id,
+  ...(extras.phone ? { phone: extras.phone, whatsappOptIn: !!extras.whatsappOptIn } : {}),
   name,
   email,
   streak: 1,
@@ -476,6 +494,9 @@ const newUserRecord = (name: string, email: string, id: string = uid('usr')): Us
 const FLASH_KEY = 'lovemate_flash_v1';
 /** A partner invite opened while signed out, joined right after sign-in. */
 const PENDING_ROOM_KEY = 'lovemate_pending_room_v1';
+/** A referral link opened before sign-up. */
+const PENDING_REF_KEY = 'lovemate_pending_ref_v1';
+const REFERRAL_DAYS = 7;
 const ROOM_CODE_RE = /^LOVE-[A-Z0-9]{4,8}$/;
 
 function reloadWith(message: string, options: { onboarding?: boolean; trial?: boolean; home?: boolean } = {}) {
@@ -560,7 +581,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!account) return cloudEnabled || saved?.id === 'usr_demo_1' ? null : saved;
     // Signed in to the cloud: the profile belongs to the account, and the partner link comes from the database.
     const couple = cloudCouple();
-    const base = saved?.id === account.id ? saved : newUserRecord(account.name, account.email, account.id);
+    const base = saved?.id === account.id ? saved : newUserRecord(account.name, account.email, account.id, account);
     return {
       ...base,
       email: account.email,
@@ -964,15 +985,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   // 7. Feature Flags & Admin
-  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_FEATURE_FLAGS);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return INITIAL_FEATURE_FLAGS;
-  });
+  // Feature flags are a fixed app setting (src/data/seedData.ts); the old per-browser copy is ignored.
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>(INITIAL_FEATURE_FLAGS);
 
   const [adminMetrics] = useState<AdminMetrics>(INITIAL_ADMIN_METRICS);
 
@@ -1029,11 +1043,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [paymentsLive, setPaymentsLive] = useState(false);
   const [paid, setPaid] = useState(() => cloudPaidPlans());
   const paidActive = (r: PaidSubscription | null): r is PaidSubscription =>
-    !!r && ['active', 'cancelling', 'past_due', 'prepaid'].includes(r.status) && (!r.current_end || Date.parse(r.current_end) > Date.now());
+    !!r && ['active', 'cancelling', 'past_due', 'prepaid', 'bonus'].includes(r.status) && (!r.current_end || Date.parse(r.current_end) > Date.now());
   const trialPlan: Plan = userSubscription.status === 'trialing' && !trialExpired ? 'plus' : 'free';
   const ownPlan: Plan = paymentsLive
     ? paidActive(paid.mine) ? (PLAN_RANK[paid.mine.plan] >= PLAN_RANK[trialPlan] ? paid.mine.plan : trialPlan) : trialPlan
-    : trialExpired ? 'free' : normalizePlan(userSubscription.tier);
+    : (() => {
+        const local: Plan = trialExpired ? 'free' : normalizePlan(userSubscription.tier);
+        // Free Plus days from referrals apply during the beta too.
+        return paidActive(paid.mine) && PLAN_RANK[paid.mine.plan] > PLAN_RANK[local] ? paid.mine.plan : local;
+      })();
   const partnerPays = paymentsLive
     ? paidActive(paid.partner) && paid.partner.plan === 'couple'
     : !!couplePlan && couplePlan.by !== user?.id;
@@ -1307,6 +1325,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const claimReferralCode = (code: string): boolean => {
+    if (cloudAccount()) {
+      const normalized = code.trim().toUpperCase();
+      if (!/^LM-[0-9A-F]{8}$/.test(normalized)) {
+        showToast('Invite codes look like LM-1A2B3C4D.', 'info');
+        return false;
+      }
+      void claimReferral(normalized).then(async (r) => {
+        if (!r.ok) return showToast(r.message ?? 'Could not use that invite code.', 'info');
+        setPaid({ ...(await refreshPaidPlans()) });
+        triggerConfetti();
+        showToast(`Invite accepted! You and your friend both get ${REFERRAL_DAYS} days of Plus free.`, 'love');
+      });
+      return true;
+    }
     if (code.trim().toUpperCase() === referralStats.referralCode) {
       showToast('You cannot use your own referral code!', 'info');
       return false;
@@ -1356,9 +1388,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: 'Just now',
       updatedAt: 'Just now',
     };
+    if (cloudAccount()) {
+      void cloudCreateTicket({ category, subject, description }).then((saved) => {
+        if (!saved) return showToast('Could not send your ticket. Please check your connection and try again.', 'info');
+        setSupportTickets((prev) => [ticketFromCloud(saved), ...prev]);
+        showToast('Ticket sent. Our team will reply here and by email, usually within 24 hours.', 'success');
+      });
+      return;
+    }
     setSupportTickets((prev) => [newTicket, ...prev]);
     showToast('Support ticket created. Our team will review within 24 hours.', 'success');
   };
+
+  const ticketFromCloud = (t: CloudTicket): SupportTicket => ({
+    id: t.id,
+    userId: user?.id ?? '',
+    userEmail: user?.email ?? '',
+    category: t.category as SupportTicket['category'],
+    subject: t.subject,
+    description: t.description,
+    status: t.status as SupportTicket['status'],
+    priority: 'medium',
+    createdAt: new Date(t.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+    updatedAt: new Date(t.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+    resolutionNote: t.reply ?? undefined,
+  });
+
+  // Signed-in accounts: tickets, referral numbers and admin access come from the database.
+  const [isAdminAccount, setIsAdminAccount] = useState(false);
+  useEffect(() => {
+    if (!cloudAccount()) return;
+    void cloudMyTickets().then((rows) => setSupportTickets(rows.map(ticketFromCloud)));
+    void cloudMyReferrals().then(({ invited }) =>
+      setReferralStats((prev) => ({
+        ...prev,
+        referralCode: myReferralCode() ?? prev.referralCode,
+        totalInvited: invited.length,
+        joinedCount: invited.length,
+        pointsEarned: invited.length * 100,
+        invites: invited.map((at, i) => ({ id: `ref_${i}`, emailOrCode: 'Friend joined', status: 'rewarded' as const, createdAt: new Date(at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) })),
+      }))
+    );
+    void checkAdmin().then((r) => setIsAdminAccount(!!r.data?.admin));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // ---- Couple quiz on two phones: each person writes only their own answers (one shared key each).
+  const readQuizAnswers = () => {
+    const out: Record<string, Record<string, 'A' | 'B'>> = {};
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith(SHARED_PREFIX)) out[k.slice(SHARED_PREFIX.length)] = readJSON<Record<string, 'A' | 'B'>>(k, {});
+    }
+    return out;
+  };
+  const [coupleQuizAnswers, setCoupleQuizAnswers] = useState(readQuizAnswers);
+  const setMyQuizAnswer = (questionId: string, choice: 'A' | 'B') => {
+    if (!user) return;
+    const mine = { ...(coupleQuizAnswers[user.id] ?? {}), [questionId]: choice };
+    localStorage.setItem(SHARED_PREFIX + user.id, JSON.stringify(mine));
+    setCoupleQuizAnswers((prev) => ({ ...prev, [user.id]: mine }));
+  };
+  const coupleQuizLive = !!cloudCouple()?.partnerName || (!!cloudCouple() && !!user?.partnerConnected);
 
   const updateSupportTicketStatus = (id: string, status: SupportTicket['status']) => {
     setSupportTickets((prev) =>
@@ -1576,6 +1666,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // Consume ?ref=CODE referral links: remembered until sign-up, then claimed for both people's free Plus days.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (!ref) return;
+    try {
+      sessionStorage.setItem(PENDING_REF_KEY, ref.trim().toUpperCase());
+    } catch {
+      /* ignore */
+    }
+    params.delete('ref');
+    const qs = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+    if (!user) {
+      openAuthModal('signup');
+      showToast(`You were invited! Create an account and you both get ${REFERRAL_DAYS} days of Plus free.`, 'love');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Consume ?room=CODE invite links once on load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1614,6 +1724,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       startPlusTrial();
       notify('welcome', {}, `welcome:${user?.id}`);
       reportEvent('welcome', user?.name);
+      let ref: string | null = null;
+      try {
+        ref = sessionStorage.getItem(PENDING_REF_KEY);
+        sessionStorage.removeItem(PENDING_REF_KEY);
+      } catch {
+        ref = null;
+      }
+      if (ref) claimReferralCode(ref);
     }
     // First sign-in through Google (no flash message, the page came back from Google).
     if (!flash && cloudIsNewAccount() && user) {
@@ -1670,6 +1788,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     const offShared = onSharedChange((key, raw) => {
       setters[key]?.(raw);
+      if (key.startsWith(SHARED_PREFIX)) {
+        const who = key.slice(SHARED_PREFIX.length);
+        try {
+          const answers = JSON.parse(raw) as Record<string, 'A' | 'B'>;
+          setCoupleQuizAnswers((prev) => ({ ...prev, [who]: answers }));
+        } catch {
+          /* ignore malformed values */
+        }
+      }
       // One "partner activity" notification per kind per day, so edits don't flood the bell.
       if (ACTIVITY[key]) notify('partner_activity', { activity: ACTIVITY[key] }, `activity:${key}:${istDate(new Date())}`);
     });
@@ -2284,6 +2411,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     payment_success: 'account',
     renewal_reminder: 'account',
     payment_failed: 'account',
+    support_reply: 'account',
   };
 
   /** Show a notification on the website (bell) and, when the tab is in the background, as a browser pop-up. */
@@ -2444,16 +2572,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return 'ok';
   };
 
-  const signup: AppContextType['signup'] = async (name, email, password) => {
+  const signup: AppContextType['signup'] = async (name, email, password, extras = {}) => {
     if (cloudEnabled) {
-      const res = await cloudSignUp(name, email, password);
+      const res = await cloudSignUp(name, email, password, extras);
       if (res === 'ok') reloadWith(`Account created. Your ${TRIAL_DAYS}-day Plus trial has started.`, { onboarding: true, trial: true });
       return res;
     }
     const key = email.trim().toLowerCase();
     const accounts = loadAccounts();
     if (accounts[key]) return 'exists';
-    const u = newUserRecord(name.trim(), key);
+    const u = newUserRecord(name.trim(), key, undefined, extras);
     accounts[key] = { user: u, passwordHash: await hashPassword(password) };
     saveAccounts(accounts);
     localStorage.removeItem(STORAGE_KEY_SESSION);
@@ -2778,7 +2906,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setActiveTab,
         pendingCopilotPrompt,
         setPendingCopilotPrompt,
-        isAdmin: !!user && (user.email.endsWith("@lovemate.ai") || user.email === "admin@lovemate.ai"),
+        isAdmin: !!user && isAdminAccount,
         authModalOpen,
         authModalMode,
         openAuthModal,
@@ -2941,6 +3069,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         trialDaysLeft,
         planFromPartner,
         aiUsageToday,
+        coupleQuizAnswers,
+        setMyQuizAnswer,
+        coupleQuizLive,
         paymentsLive,
         paidSubscription: paid.mine,
         startPaidCheckout,

@@ -45,16 +45,43 @@ export async function adminUpsert(table: string, rows: unknown, onConflict?: str
   if (!res.ok) throw new Error(`Supabase upsert ${table}: HTTP ${res.status} ${await res.text().catch(() => '')}`);
 }
 
-/** All accounts (id, email), via the Auth admin API. */
-export async function listUsers(): Promise<{ id: string; email: string }[]> {
-  const users: { id: string; email: string }[] = [];
+export interface AccountRow {
+  id: string;
+  email: string;
+  created_at?: string;
+  last_sign_in_at?: string | null;
+}
+
+/** All accounts, via the Auth admin API. */
+export async function listUsers(): Promise<AccountRow[]> {
+  const users: AccountRow[] = [];
   for (let page = 1; page < 50; page++) {
     const res = await fetch(`${supabaseUrl()}/auth/v1/admin/users?page=${page}&per_page=500`, { headers: adminHeaders() });
     if (!res.ok) throw new Error(`Supabase list users: HTTP ${res.status}`);
-    const json = (await res.json()) as { users?: { id: string; email?: string }[] };
+    const json = (await res.json()) as { users?: { id: string; email?: string; created_at?: string; last_sign_in_at?: string | null }[] };
     const batch = json.users ?? [];
-    users.push(...batch.filter((u) => u.email).map((u) => ({ id: u.id, email: u.email! })));
+    users.push(...batch.filter((u) => u.email).map((u) => ({ id: u.id, email: u.email!, created_at: u.created_at, last_sign_in_at: u.last_sign_in_at })));
     if (batch.length < 500) break;
   }
   return users;
+}
+
+/** PATCH rows matching `filter` (e.g. "id=eq.123"). */
+export async function adminPatch(table: string, filter: string, values: unknown): Promise<void> {
+  const res = await fetch(`${supabaseUrl()}/rest/v1/${table}?${filter}`, {
+    method: 'PATCH',
+    headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(values),
+  });
+  if (!res.ok) throw new Error(`Supabase update ${table}: HTTP ${res.status}`);
+}
+
+/** Insert rows; fails on duplicates (unlike adminUpsert). */
+export async function adminInsert(table: string, rows: unknown): Promise<void> {
+  const res = await fetch(`${supabaseUrl()}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: { ...adminHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(rows),
+  });
+  if (!res.ok) throw new Error(`Supabase insert ${table}: HTTP ${res.status} ${await res.text().catch(() => '')}`);
 }

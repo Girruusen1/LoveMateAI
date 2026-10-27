@@ -14,7 +14,8 @@ export type NotificationType =
   | 'trial_ended'
   | 'payment_success'
   | 'renewal_reminder'
-  | 'payment_failed';
+  | 'payment_failed'
+  | 'support_reply';
 
 export type Channel = 'inApp' | 'email' | 'browser';
 export type NotificationCategory = 'reminders' | 'partner' | 'account';
@@ -94,6 +95,13 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, CatalogEntry> = {
     defaults: { inApp: true, email: true, browser: true },
     emailRequired: true,
   },
+  support_reply: {
+    label: 'Support replies',
+    description: 'When the LoveMate team answers your support request.',
+    category: 'account',
+    defaults: { inApp: true, email: true, browser: true },
+    emailRequired: true,
+  },
 };
 
 export const NOTIFICATION_TYPES = Object.keys(NOTIFICATION_CATALOG) as NotificationType[];
@@ -159,6 +167,9 @@ export interface NotificationData {
   amount?: string;
   endDate?: string;
   autoRenew?: boolean;
+  /** support_reply */
+  ticketSubject?: string;
+  replyText?: string;
 }
 
 export interface RenderedNotification {
@@ -338,6 +349,22 @@ export function renderNotification(type: NotificationType, d: NotificationData):
           'Open the plans window and choose your plan again to pay with UPI, a card or netbanking.',
         ],
         whatsapp: '⚠️ LoveMate: your renewal payment failed. Open the app to keep your plan.',
+      };
+    case 'support_reply':
+      return {
+        emoji: '💬',
+        title: 'We replied to your support request',
+        body: d.ticketSubject ? `About "${d.ticketSubject}". Open Support to read it.` : 'Open Support to read our reply.',
+        actionTab: 'support',
+        actionLabel: 'Read the reply',
+        emailSubject: `Re: ${d.ticketSubject || 'your LoveMate support request'}`,
+        emailPreheader: 'The LoveMate team has answered.',
+        emailParagraphs: [
+          `Hi ${name}, thanks for writing to us${d.ticketSubject ? ` about "${d.ticketSubject}"` : ''}. Here is our reply:`,
+          d.replyText || 'Please open Support in LoveMate to read the reply.',
+          'If you need anything else, just reply in Support.',
+        ],
+        whatsapp: 'LoveMate support replied to your request. Open the app to read it.',
       };
   }
 }

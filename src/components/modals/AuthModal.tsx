@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, User, X } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Phone, User, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { LoveMateLogo } from '../common/LoveMateLogo';
 import { cloudEnabled, cloudSendPasswordReset, cloudSignInWithGoogle, cloudUpdatePassword } from '../../services/cloud';
@@ -16,6 +16,11 @@ export const AuthModal: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
+  /** Indian mobile number: 10 digits starting 6-9, with or without +91 / spaces. */
+  const phoneDigits = phone.replace(/[\s-]/g, '').replace(/^(\+91|0091|91(?=\d{10}$)|0)/, '');
+  const phoneValid = /^[6-9]\d{9}$/.test(phoneDigits);
   const [showPassword, setShowPassword] = useState(false);
   const [otpCode, setOtpCode] = useState(['', '', '', '']);
   const [issuedCode, setIssuedCode] = useState<string | null>(null);
@@ -68,7 +73,8 @@ export const AuthModal: React.FC = () => {
         if (!isEmail(email)) return setError('Please enter a valid email address');
         if (password.length < 6) return setError('Password must be at least 6 characters');
         if (password !== confirmPassword) return setError('Passwords do not match');
-        const res = await signup(name, email, password);
+        if (phone.trim() && !phoneValid) return setError('Please enter a valid 10-digit Indian mobile number, or leave it empty');
+        const res = await signup(name, email, password, phone.trim() ? { phone: '+91' + phoneDigits, whatsappOptIn } : {});
         if (res === 'exists') return setError('An account with this email already exists. Sign in instead.');
         if (res === 'confirm_email') {
           setNotice(`Almost done! We sent a confirmation link to ${email.trim()}. Open it, then sign in here.`);
@@ -285,6 +291,34 @@ export const AuthModal: React.FC = () => {
                   <Mail className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input id="auth-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" className={input} />
                 </div>
+              </div>
+            )}
+
+            {mode === 'signup' && (
+              <div>
+                <label htmlFor="auth-phone" className="block text-xs font-semibold text-zinc-700 mb-1.5">
+                  Mobile number <span className="font-normal text-zinc-400">(optional)</span>
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <span className="absolute left-9 top-1/2 -translate-y-1/2 text-sm text-zinc-500">+91</span>
+                  <input
+                    id="auth-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/[^\d\s+-]/g, '').slice(0, 16))}
+                    placeholder="98765 43210"
+                    autoComplete="tel-national"
+                    className={`${input} pl-[4.25rem]`}
+                  />
+                </div>
+                {phone.trim() && (
+                  <label className={`mt-2 flex items-start gap-2 text-xs ${phoneValid ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                    <input type="checkbox" className="mt-0.5 accent-rose-600" checked={whatsappOptIn && phoneValid} disabled={!phoneValid} onChange={(e) => setWhatsappOptIn(e.target.checked)} />
+                    <span>Send me reminders (birthdays, anniversaries, my plan) on WhatsApp. You can stop anytime.</span>
+                  </label>
+                )}
               </div>
             )}
 

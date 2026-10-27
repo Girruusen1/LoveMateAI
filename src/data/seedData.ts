@@ -1299,15 +1299,15 @@ export const INITIAL_MARKETPLACE_EXPERIENCES: ExperienceItem[] = [
 ];
 
 export const INITIAL_FEATURE_FLAGS: FeatureFlags = {
-  love_agent: true,
+  love_agent: false, // demo-only for now; switch on from the admin console when real
   relationship_copilot: true,
   couple_ai: true,
-  relationship_autopilot: true,
+  relationship_autopilot: false, // demo-only for now; switch on from the admin console when real
   couple_calendar: true,
   relationship_goals_v2: true,
   wishlist: true,
   gift_intelligence_v2: true,
-  experience_marketplace: true,
+  experience_marketplace: false, // demo-only for now; switch on from the admin console when real
   creator_system: true,
   community_foundation: true,
 };
