@@ -294,7 +294,7 @@ export const takePasswordRecovery = () => {
 // ------------------------------------------------------------------ auth
 
 export type SignInResult = 'ok' | 'wrong_password' | 'not_confirmed' | 'error';
-export type SignUpResult = 'ok' | 'exists' | 'confirm_email' | 'error';
+export type SignUpResult = 'ok' | 'exists' | 'confirm_email' | 'invalid_email' | 'rate_limited' | 'error';
 
 export async function cloudSignIn(email: string, password: string): Promise<SignInResult> {
   if (!sb) return 'error';
@@ -322,6 +322,10 @@ export async function cloudSignUp(name: string, email: string, password: string,
   });
   if (error) {
     if (error.code === 'user_already_exists' || /already registered/i.test(error.message)) return 'exists';
+    // Reserved test domains (example.com) and malformed addresses.
+    if (error.code === 'email_address_invalid' || /invalid/i.test(error.message)) return 'invalid_email';
+    // Supabase's built-in mailer allows only a few confirmation emails an hour.
+    if (error.code === 'over_email_send_rate_limit' || error.status === 429) return 'rate_limited';
     console.warn('[cloud] sign up failed:', error.message);
     return 'error';
   }

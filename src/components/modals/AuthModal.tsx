@@ -82,6 +82,8 @@ export const AuthModal: React.FC = () => {
           setNotice(t('Almost done! We sent a confirmation link to {email}. Open it, then sign in here.', { email: email.trim() }));
           return switchModeKeepNotice('login');
         }
+        if (res === 'invalid_email') return setError(t('Please use a real email address you can open (test addresses like example.com are not accepted).'));
+        if (res === 'rate_limited') return setError(t('Too many sign-ups in the last hour. Please try again in a little while.'));
         if (res === 'error') return setError(NETWORK_ERROR);
       } else if (mode === 'login') {
         if (!isEmail(email)) return setError(t('Please enter a valid email address'));

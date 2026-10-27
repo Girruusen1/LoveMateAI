@@ -161,7 +161,7 @@ interface AppContextType {
     email: string,
     password: string,
     extras?: { phone?: string; whatsappOptIn?: boolean }
-  ) => Promise<'ok' | 'exists' | 'confirm_email' | 'error'>;
+  ) => Promise<'ok' | 'exists' | 'confirm_email' | 'invalid_email' | 'rate_limited' | 'error'>;
   /** Couple quiz answers per person (user id → question id → choice), synced live between partners. */
   coupleQuizAnswers: Record<string, Record<string, 'A' | 'B'>>;
   setMyQuizAnswer: (questionId: string, choice: 'A' | 'B') => void;
