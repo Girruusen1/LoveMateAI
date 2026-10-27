@@ -93,8 +93,8 @@ export const ScrapbookView: React.FC = () => {
             <Button variant="secondary" onClick={handleExportText} icon={<Download className="w-3.5 h-3.5" />}>
               Export
             </Button>
-            <Button variant="primary" onClick={() => setActiveTab('our-story-movie')} icon={<Film className="w-3.5 h-3.5" />}>
-              Play as movie
+            <Button variant="primary" onClick={() => setActiveTab('timeline')} icon={<Film className="w-3.5 h-3.5" />}>
+              Open timeline
             </Button>
           </>
         }

@@ -41,5 +41,21 @@ export default defineConfig(({ mode }) => {
   }
   return {
     plugins: [react(), tailwindcss(), genaiGateway()],
+    build: {
+      // Vite 8 bundles with rolldown; `codeSplitting.groups` is its manualChunks.
+      // The two heavy libraries get their own long-cached chunks; pages load on demand (React.lazy in App.tsx).
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              { name: 'astronomy', test: /node_modules[\\/]astronomy-engine[\\/]/ },
+              { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/ },
+              // One shared icon chunk instead of dozens of 0.4 kB chunks for icons that several pages share.
+              { name: 'icons', test: /node_modules[\\/]lucide-react[\\/]/ },
+            ],
+          },
+        },
+      },
+    },
   }
 })

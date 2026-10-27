@@ -54,8 +54,8 @@ export const RelationshipDashboardView: React.FC = () => {
         subtitle={`A snapshot of your journey with ${partnerName}, built from your shared activities, check-ins and milestones.`}
         actions={
           <>
-            <Button variant="secondary" icon={<Sparkles className="w-4 h-4" />} onClick={() => setActiveTab('chemistry-mode')}>
-              Chemistry mode
+            <Button variant="secondary" icon={<Sparkles className="w-4 h-4" />} onClick={() => setActiveTab('couple-mode')}>
+              Couple quiz
             </Button>
             <Button variant="primary" icon={<Users className="w-4 h-4" />} onClick={() => setActiveTab('our-space')}>
               Open Our Space
@@ -193,8 +193,8 @@ export const RelationshipDashboardView: React.FC = () => {
             "What is one 20-minute ritual we can protect next week where we keep phones out of reach and just talk about anything silly or deep?"
           </p>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="primary" size="sm" onClick={() => setActiveTab('chemistry-mode')}>
-              Start Chemistry mode tonight
+            <Button variant="primary" size="sm" onClick={() => setActiveTab('couple-mode')}>
+              Start the couple quiz tonight
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setActiveTab('date-planner')}>
               Plan a screen-free date

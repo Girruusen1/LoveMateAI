@@ -20,7 +20,10 @@ export const PLANS: Record<Plan, { name: string; monthlyINR: number; yearlyINR: 
 
 export const TRIAL_DAYS = 7;
 
-/** Pages that need a paid plan. Everything else is free with an account. */
+/**
+ * Tools that need a paid plan, keyed by the tool id. Everything else is free with an account.
+ * Hub pages are free to open; each hub locks its own modes with this table (see HubView).
+ */
 export const PAGE_PLAN: Partial<Record<ActiveTab, PaidPlan>> = {
   screenshot: 'plus',
   'reply-copilot': 'plus',
@@ -47,13 +50,9 @@ export const PAGE_PLAN: Partial<Record<ActiveTab, PaidPlan>> = {
   'couple-calendar': 'couple',
   wishlist: 'couple',
   scrapbook: 'couple',
-  'our-story-movie': 'couple',
   challenges: 'couple',
   'couple-coach': 'couple',
   'long-distance': 'couple',
-  'agent-activity': 'couple',
-  autopilot: 'couple',
-  marketplace: 'couple',
 };
 
 /** Free plan: daily AI allowance per kind of tool. Paid plans are unlimited. */
@@ -103,7 +102,6 @@ export const PLAN_FEATURES: Record<Plan, string[]> = {
     'Everything in Plus for both partners, one payment',
     'Shared calendar, wishlist and scrapbook, synced live',
     'Couples coach and couple challenges',
-    'Our story movie and long-distance tools',
-    'Love agent, autopilot and experiences',
+    'Long-distance tools: time zones, countdowns and rituals',
   ],
 };

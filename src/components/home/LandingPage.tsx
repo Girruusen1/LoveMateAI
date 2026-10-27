@@ -1,26 +1,27 @@
 import React, { useRef, useState } from 'react';
 import {
+  Activity,
   ArrowRight,
   BookHeart,
-  Calendar,
-  Camera,
   Check,
   ChevronDown,
   Copy,
   Gamepad2,
   Gift,
+  Headphones,
   Heart,
   Languages,
   Lock,
   Mail,
   MessageSquare,
   Mic,
+  Orbit,
+  Plane,
+  Radar,
   Search,
   ShieldCheck,
   Sparkles,
   Unlock,
-  Wand2,
-  Wine,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AIService } from '../../services/ai';
@@ -198,19 +199,20 @@ const PreviewTogether = () => (
    --------------------------------------------------------------------------- */
 const SAMPLES = ['haan dekhte hain 😂', 'k', 'haha okay sure', 'busy hoon, baad mein baat karte hain'];
 
+/** The hubs and headline tools, in the same words as the Explore menu. */
 const TOOLS: { label: string; tab: ActiveTab; icon: React.ReactNode }[] = [
-  { label: 'Decode a message', tab: 'decode', icon: <Search /> },
-  { label: 'Screenshot analyzer', tab: 'screenshot', icon: <Camera /> },
-  { label: 'What should I reply?', tab: 'reply', icon: <MessageSquare /> },
-  { label: 'Write a confession', tab: 'confession', icon: <Mail /> },
-  { label: 'Make this better', tab: 'message-transformer', icon: <Wand2 /> },
-  { label: 'Date planner', tab: 'date-planner', icon: <Wine /> },
-  { label: 'Gift ideas', tab: 'gift-intelligence', icon: <Gift /> },
-  { label: 'Couple games', tab: 'games', icon: <Gamepad2 /> },
-  { label: 'Our story', tab: 'our-story', icon: <BookHeart /> },
+  { label: 'Decode a message', tab: 'understand-message', icon: <Search /> },
+  { label: 'Read the situation', tab: 'read-situation', icon: <Radar /> },
+  { label: 'Help me reply', tab: 'help-reply', icon: <MessageSquare /> },
+  { label: 'Confession studio', tab: 'confession', icon: <Mail /> },
+  { label: 'Date & gift planner', tab: 'plan-date', icon: <Gift /> },
+  { label: 'Trip together', tab: 'trip-together', icon: <Plane /> },
+  { label: 'Practice a conversation', tab: 'practice', icon: <Headphones /> },
+  { label: 'Check-in & insights', tab: 'insights', icon: <Activity /> },
+  { label: 'Couple mode', tab: 'couple', icon: <Gamepad2 /> },
+  { label: 'Our story', tab: 'our-story-hub', icon: <BookHeart /> },
   { label: 'Voice chat', tab: 'voice-chat', icon: <Mic /> },
-  { label: 'Important dates', tab: 'important-dates', icon: <Calendar /> },
-  { label: 'Chemistry questions', tab: 'chemistry-mode', icon: <Sparkles /> },
+  { label: 'Kundli Milan', tab: 'kundli', icon: <Orbit /> },
 ];
 
 const FAQ = [
@@ -384,7 +386,7 @@ export const LandingPage: React.FC = () => {
             body: 'Decode a message or a whole chat screenshot. LoveMate separates what was actually said from what you might be assuming, then helps you reply calmly.',
             points: ['Tone and mood at a glance', 'Screenshot analysis', 'What not to assume'],
             preview: <PreviewUnderstand />,
-            tab: 'decode' as ActiveTab,
+            tab: 'understand-message' as ActiveTab,
           },
           {
             eyebrow: 'Say it right',
@@ -400,7 +402,7 @@ export const LandingPage: React.FC = () => {
             body: 'Answer a sealed question each day, keep shared memories and goals, and plan dates and trips that fit your city and budget.',
             points: ['Daily sealed questions', 'Our Space for memories', 'Date and trip plans'],
             preview: <PreviewTogether />,
-            tab: 'date-planner' as ActiveTab,
+            tab: 'plan-date' as ActiveTab,
           },
         ].map((f, i) => (
           <div key={f.title} className={`grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center ${i % 2 ? 'lg:[&>*:first-child]:order-2' : ''}`}>

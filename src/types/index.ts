@@ -1006,6 +1006,16 @@ export interface AdminMetrics {
 
 export type ActiveTab =
   | 'home'
+  // Hubs: each groups several tools behind a mode switcher. The old per-tool ids further down
+  // still open the right hub in the right mode (see ALIASES in utils/routes.ts).
+  | 'understand-message'
+  | 'read-situation'
+  | 'help-reply'
+  | 'plan-date'
+  | 'practice'
+  | 'insights'
+  | 'couple'
+  | 'our-story-hub'
   | 'chat'
   | 'calculator'
   | 'confession'

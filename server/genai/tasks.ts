@@ -30,9 +30,9 @@ const quote = (label: string, text: string) => (text ? `${label}:\n"""\n${text}\
 
 const NAV_TABS = [
   'decode', 'reply', 'confession', 'message-transformer', 'date-planner', 'gift-intelligence', 'trip-together',
-  'couple-calendar', 'wishlist', 'important-dates', 'our-space', 'games', 'infinite-games', 'chemistry-mode',
+  'couple-calendar', 'wishlist', 'important-dates', 'our-space', 'games', 'infinite-games', 'couple-mode',
   'conversation-coach', 'couple-coach', 'communication-coach', 'detective', 'what-if', 'should-confess',
-  'crush-analyzer', 'memory-center', 'relationship-dashboard', 'long-distance', 'love-cards', 'agent-activity',
+  'crush-analyzer', 'memory-center', 'relationship-dashboard', 'long-distance', 'love-cards', 'health-check',
 ] as const;
 
 /* ---------- schemas ---------- */

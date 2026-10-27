@@ -1450,7 +1450,7 @@ Here are 3 quick ideas for tonight:
 2. **Chemistry Intimacy Sprint:** Grab drinks and play 10 minutes of Level 2 Chemistry Mode on LoveMate.
 3. **Late-Night Drive & Gelato:** Go for a calm 40-minute drive listening to your shared road-trip playlist.`,
         suggestedActions: [
-          { label: '✨ Start Chemistry Mode', tab: 'chemistry-mode' },
+          { label: '✨ Start the couple quiz', tab: 'couple-mode' },
           { label: '🗺️ Date Planner Itinerary', tab: 'date-planner' },
           { label: '🎲 Infinite AI Games', tab: 'infinite-games' },
         ],
@@ -1473,7 +1473,7 @@ Here are 3 quick ideas for tonight:
       suggestedActions: [
         { label: '📅 Plan Next Date', tab: 'date-planner' },
         { label: '❤️ Open Our Space', tab: 'our-space' },
-        { label: '🤖 Explore Autopilot Rules', tab: 'autopilot' },
+        { label: '💞 Do a quick check-in', tab: 'health-check' },
         { label: '🎁 View Our Wishlist', tab: 'wishlist' },
       ],
     };

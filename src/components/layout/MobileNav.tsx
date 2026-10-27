@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Compass, Heart, Home, Search, Sparkles, User, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ActiveTab } from '../../types';
+import { resolveTab } from '../../utils/routes';
 import { EXPLORE_GROUPS } from './Navbar';
 
 export const MobileNav: React.FC = () => {
@@ -10,6 +11,7 @@ export const MobileNav: React.FC = () => {
   const [query, setQuery] = useState('');
 
   const q = query.trim().toLowerCase();
+  const currentPage = resolveTab(activeTab).tab;
   const groups = EXPLORE_GROUPS.map((g) => ({
     ...g,
     items: q ? g.items.filter((i) => i.label.toLowerCase().includes(q) || g.title.toLowerCase().includes(q)) : g.items,
@@ -59,7 +61,7 @@ export const MobileNav: React.FC = () => {
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">{g.title}</p>
                   <ul className="grid grid-cols-2 gap-1.5">
                     {g.items.map((item) => {
-                      const active = activeTab === item.tab;
+                      const active = currentPage === item.tab;
                       return (
                         <li key={item.tab}>
                           <button

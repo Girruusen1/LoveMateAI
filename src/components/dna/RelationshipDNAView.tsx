@@ -436,8 +436,8 @@ export const RelationshipDNAView: React.FC = () => {
               <p className="text-sm text-zinc-700 leading-snug">"{dna.tryTogetherActivity}"</p>
 
               <div className="pt-1">
-                <Button variant="primary" size="sm" onClick={() => setActiveTab('chemistry-mode')}>
-                  Launch Chemistry mode
+                <Button variant="primary" size="sm" onClick={() => setActiveTab('couple-mode')}>
+                  Open the couple quiz
                 </Button>
               </div>
             </Card>
