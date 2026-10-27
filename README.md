@@ -59,6 +59,19 @@ browser ──► /api/ai/*  (server/genai, runs inside Vite in dev, server/inde
 
 The browser side is `src/services/ai.ts`, which keeps the same method signatures the screens already use and falls back to the simulator in `src/services/aiService.ts` only when no key is configured.
 
+## Deploy on your own server (VPS)
+
+Ubuntu 24.04 (Oracle Cloud Always Free, Hostinger, any VPS). From your PC:
+
+```bash
+scp -i ~/.ssh/lovemate_oracle deploy/setup-server.sh ubuntu@SERVER_IP:~
+ssh -i ~/.ssh/lovemate_oracle ubuntu@SERVER_IP
+bash setup-server.sh            # run again after each step it asks for (GitHub deploy key, .env)
+bash setup-server.sh your-domain.in   # once the domain points to the server: free HTTPS
+```
+
+It installs Node 24, PM2 (auto-restart), Nginx and Let's Encrypt, and opens ports 80/443 in the server firewall. On Oracle, also allow ports 80 and 443 in the VCN security list. Update later with `bash /opt/lovemate/deploy/update.sh`.
+
 ## Scripts
 
 | Command | What it does |
