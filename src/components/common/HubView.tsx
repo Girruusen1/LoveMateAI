@@ -1,8 +1,9 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { Lock } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useT } from '../../i18n';
 import type { ActiveTab, FeatureFlags } from '../../types';
-import { PAGE_PLAN } from '../../utils/plans';
+import { PAGE_PLAN, PLANS } from '../../utils/plans';
 import { hashToMode, tabToHash } from '../../utils/routes';
 import { FeatureGate } from './FeatureGate';
 import { PageSkeleton } from './PageSkeleton';
@@ -54,6 +55,7 @@ const writeLastMode = (hubId: ActiveTab, mode: string) => {
  */
 export const HubView: React.FC<HubViewProps> = ({ hubId, title, subtitle, icon, modes, initialMode }) => {
   const { activeTab, setActiveTab, hasPlan } = useApp();
+  const { t } = useT();
 
   const isMode = (m: string | null | undefined): m is ActiveTab => !!m && modes.some((x) => x.id === m);
 
@@ -107,12 +109,12 @@ export const HubView: React.FC<HubViewProps> = ({ hubId, title, subtitle, icon, 
             {icon}
           </div>
           <div className="min-w-0">
-            <h2 className="text-base font-bold text-zinc-900 leading-tight">{title}</h2>
-            <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{subtitle}</p>
+            <h2 className="text-base font-bold text-zinc-900 leading-tight">{t(title)}</h2>
+            <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{t(subtitle)}</p>
           </div>
         </div>
 
-        <div role="tablist" aria-label={`${title}: modes`} className="mt-4 flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 [scrollbar-width:none]">
+        <div role="tablist" aria-label={t(title)} className="mt-4 flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 [scrollbar-width:none]">
           {modes.map((m) => {
             const selected = m.id === mode.id;
             const plan = PAGE_PLAN[m.id];
@@ -132,13 +134,13 @@ export const HubView: React.FC<HubViewProps> = ({ hubId, title, subtitle, icon, 
                 }`}
               >
                 {m.icon}
-                {m.label}
-                {locked && <Lock className={selected ? 'text-rose-100' : 'text-zinc-400'} aria-label={`Needs the ${plan} plan`} />}
+                {t(m.label)}
+                {locked && <Lock className={selected ? 'text-rose-100' : 'text-zinc-400'} aria-label={t('Needs the {plan} plan', { plan: PLANS[plan].name })} />}
               </button>
             );
           })}
         </div>
-        {mode.hint && <p className="mt-2.5 text-xs text-zinc-500">{mode.hint}</p>}
+        {mode.hint && <p className="mt-2.5 text-xs text-zinc-500">{t(mode.hint)}</p>}
       </div>
 
       <div key={mode.id} data-hub-mode={mode.id}>

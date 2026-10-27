@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, Phone, User, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { LanguageSwitch, useT } from '../../i18n';
 import { LoveMateLogo } from '../common/LoveMateLogo';
 import { cloudEnabled, cloudSendPasswordReset, cloudSignInWithGoogle, cloudUpdatePassword } from '../../services/cloud';
 
@@ -10,6 +11,7 @@ const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 
 export const AuthModal: React.FC = () => {
   const { authModalOpen, authModalMode, closeAuthModal, login, signup, setPasswordForEmail, accountExists, showToast } = useApp();
+  const { t } = useT();
 
   const [mode, setMode] = useState<Mode>(authModalMode || 'login');
   const [name, setName] = useState('');
@@ -51,14 +53,14 @@ export const AuthModal: React.FC = () => {
     setNotice('');
   };
 
-  const NETWORK_ERROR = 'Could not reach the server. Check your connection and try again.';
+  const NETWORK_ERROR = t('Could not reach the server. Check your connection and try again.');
 
   /** There is no mail server in this build, so the recovery code is shown on screen. */
   const issueCode = () => {
     const code = String(Math.floor(1000 + Math.random() * 9000));
     setIssuedCode(code);
     setOtpCode(['', '', '', '']);
-    showToast(`No email service is connected. Your recovery code is ${code}.`, 'info');
+    showToast(t('No email service is connected. Your recovery code is {code}.', { code }), 'info');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,53 +71,52 @@ export const AuthModal: React.FC = () => {
     setBusy(true);
     try {
       if (mode === 'signup') {
-        if (!name.trim()) return setError('Please enter your name');
-        if (!isEmail(email)) return setError('Please enter a valid email address');
-        if (password.length < 6) return setError('Password must be at least 6 characters');
-        if (password !== confirmPassword) return setError('Passwords do not match');
-        if (phone.trim() && !phoneValid) return setError('Please enter a valid 10-digit Indian mobile number, or leave it empty');
+        if (!name.trim()) return setError(t('Please enter your name'));
+        if (!isEmail(email)) return setError(t('Please enter a valid email address'));
+        if (password.length < 6) return setError(t('Password must be at least 6 characters'));
+        if (password !== confirmPassword) return setError(t('Passwords do not match'));
+        if (phone.trim() && !phoneValid) return setError(t('Please enter a valid 10-digit Indian mobile number, or leave it empty'));
         const res = await signup(name, email, password, phone.trim() ? { phone: '+91' + phoneDigits, whatsappOptIn } : {});
-        if (res === 'exists') return setError('An account with this email already exists. Sign in instead.');
+        if (res === 'exists') return setError(t('An account with this email already exists. Sign in instead.'));
         if (res === 'confirm_email') {
-          setNotice(`Almost done! We sent a confirmation link to ${email.trim()}. Open it, then sign in here.`);
+          setNotice(t('Almost done! We sent a confirmation link to {email}. Open it, then sign in here.', { email: email.trim() }));
           return switchModeKeepNotice('login');
         }
         if (res === 'error') return setError(NETWORK_ERROR);
       } else if (mode === 'login') {
-        if (!isEmail(email)) return setError('Please enter a valid email address');
-        if (!password) return setError('Please enter your password');
+        if (!isEmail(email)) return setError(t('Please enter a valid email address'));
+        if (!password) return setError(t('Please enter your password'));
         const res = await login(email, { password });
-        if (res === 'no_account') return setError('No account found for this email. Create one first.');
-        if (res === 'wrong_password')
-          return setError(cloudEnabled ? 'Email or password is incorrect.' : 'Incorrect password. Try again or reset it.');
-        if (res === 'not_confirmed') return setError('Please confirm your email first. Check your inbox for the link we sent.');
+        if (res === 'no_account') return setError(t('No account found for this email. Create one first.'));
+        if (res === 'wrong_password') return setError(cloudEnabled ? t('Email or password is incorrect.') : t('Incorrect password. Try again or reset it.'));
+        if (res === 'not_confirmed') return setError(t('Please confirm your email first. Check your inbox for the link we sent.'));
         if (res === 'error') return setError(NETWORK_ERROR);
       } else if (mode === 'forgot' && cloudEnabled) {
-        if (!isEmail(email)) return setError('Please enter your registered email');
-        if (!(await cloudSendPasswordReset(email))) return setError('Could not send the reset email right now. Please try again later.');
-        setNotice(`If an account exists for ${email.trim()}, we sent a link to reset the password.`);
+        if (!isEmail(email)) return setError(t('Please enter your registered email'));
+        if (!(await cloudSendPasswordReset(email))) return setError(t('Could not send the reset email right now. Please try again later.'));
+        setNotice(t('If an account exists for {email}, we sent a link to reset the password.', { email: email.trim() }));
       } else if (mode === 'reset' && cloudEnabled) {
-        if (password.length < 6) return setError('Password must be at least 6 characters');
-        if (password !== confirmPassword) return setError('Passwords do not match');
-        if (!(await cloudUpdatePassword(password))) return setError('Could not update the password. Open the reset link again.');
-        showToast('Password updated. You are signed in.', 'success');
+        if (password.length < 6) return setError(t('Password must be at least 6 characters'));
+        if (password !== confirmPassword) return setError(t('Passwords do not match'));
+        if (!(await cloudUpdatePassword(password))) return setError(t('Could not update the password. Open the reset link again.'));
+        showToast(t('Password updated. You are signed in.'), 'success');
         closeAuthModal();
       } else if (mode === 'forgot') {
-        if (!isEmail(email)) return setError('Please enter your registered email');
-        if (!accountExists(email)) return setError('No account found for this email.');
+        if (!isEmail(email)) return setError(t('Please enter your registered email'));
+        if (!accountExists(email)) return setError(t('No account found for this email.'));
         issueCode();
         setMode('verify');
       } else if (mode === 'verify') {
-        if (otpCode.join('') !== issuedCode) return setError('That code is not correct.');
+        if (otpCode.join('') !== issuedCode) return setError(t('That code is not correct.'));
         setMode('reset');
         setPassword('');
         setConfirmPassword('');
       } else if (mode === 'reset') {
-        if (password.length < 6) return setError('Password must be at least 6 characters');
-        if (password !== confirmPassword) return setError('Passwords do not match');
+        if (password.length < 6) return setError(t('Password must be at least 6 characters'));
+        if (password !== confirmPassword) return setError(t('Passwords do not match'));
         const ok = await setPasswordForEmail(email, password);
-        if (!ok) return setError('Could not update the password for this account.');
-        showToast('Password updated. You are signed in.', 'success');
+        if (!ok) return setError(t('Could not update the password for this account.'));
+        showToast(t('Password updated. You are signed in.'), 'success');
         await login(email, { password });
       }
     } finally {
@@ -132,7 +133,7 @@ export const AuthModal: React.FC = () => {
     if (!cloudEnabled) {
       // Local build without accounts: a stand-in Google account on this device.
       await login('google.demo@example.com', { provider: 'google', name: 'Google Demo' });
-      showToast('Signed in with the Google demo account (no real OAuth in this build).', 'info');
+      showToast(t('Signed in with the Google demo account (no real OAuth in this build).'), 'info');
       return;
     }
     setError('');
@@ -140,7 +141,7 @@ export const AuthModal: React.FC = () => {
     const res = await cloudSignInWithGoogle();
     if (res === 'redirecting') return; // the browser is leaving for Google
     setBusy(false);
-    setError(res === 'not_enabled' ? 'Google sign-in is not switched on yet. Please use email for now.' : NETWORK_ERROR);
+    setError(res === 'not_enabled' ? t('Google sign-in is not switched on yet. Please use email for now.') : NETWORK_ERROR);
   };
 
   const handleGuest = async () => {
@@ -155,11 +156,11 @@ export const AuthModal: React.FC = () => {
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label htmlFor="auth-password" className="text-xs font-semibold text-zinc-700">
-            {mode === 'reset' ? 'New password' : 'Password'}
+            {mode === 'reset' ? t('New password') : t('Password')}
           </label>
           {mode === 'login' && (
             <button type="button" onClick={() => switchMode('forgot')} className="text-xs text-rose-600 font-medium hover:underline">
-              Forgot password?
+              {t('Forgot password?')}
             </button>
           )}
         </div>
@@ -170,14 +171,14 @@ export const AuthModal: React.FC = () => {
             type={showPassword ? 'text' : 'password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={mode === 'login' ? 'Your password' : 'At least 6 characters'}
+            placeholder={mode === 'login' ? t('Your password') : t('At least 6 characters')}
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             className={input}
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-label={showPassword ? t('Hide password') : t('Show password')}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700"
           >
             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -187,7 +188,7 @@ export const AuthModal: React.FC = () => {
       {(mode === 'signup' || mode === 'reset') && (
         <div>
           <label htmlFor="auth-confirm" className="block text-xs font-semibold text-zinc-700 mb-1.5">
-            Confirm password
+            {t('Confirm password')}
           </label>
           <div className="relative">
             <Lock className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -196,7 +197,7 @@ export const AuthModal: React.FC = () => {
               type={showPassword ? 'text' : 'password'}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repeat your password"
+              placeholder={t('Repeat your password')}
               autoComplete="new-password"
               className={input}
             />
@@ -210,9 +211,12 @@ export const AuthModal: React.FC = () => {
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-xs animate-in fade-in" role="dialog" aria-modal="true" aria-labelledby="auth-title">
       <div className="min-h-full flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-zinc-200/90 overflow-hidden relative my-4">
+          <div className="absolute top-4 left-4">
+            <LanguageSwitch hideIcon />
+          </div>
           <button
             onClick={closeAuthModal}
-            aria-label="Close"
+            aria-label={t('Close')}
             className="absolute top-4 right-4 p-1.5 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -223,18 +227,18 @@ export const AuthModal: React.FC = () => {
               <LoveMateLogo variant="icon" size="lg" />
             </div>
             <h2 id="auth-title" className="text-xl font-bold text-zinc-900 tracking-tight">
-              {mode === 'signup' && 'Create your account'}
-              {mode === 'login' && 'Welcome back'}
-              {mode === 'forgot' && 'Reset your password'}
-              {mode === 'verify' && 'Enter your recovery code'}
-              {mode === 'reset' && 'Choose a new password'}
+              {mode === 'signup' && t('Create your account')}
+              {mode === 'login' && t('Welcome back')}
+              {mode === 'forgot' && t('Reset your password')}
+              {mode === 'verify' && t('Enter your recovery code')}
+              {mode === 'reset' && t('Choose a new password')}
             </h2>
             <p className="text-xs text-zinc-500 mt-1">
-              {mode === 'signup' && 'Your private AI wingman for love and relationships'}
-              {mode === 'login' && 'Pick up where you left off'}
-              {mode === 'forgot' && 'Enter the email you signed up with'}
-              {mode === 'verify' && `Use the 4-digit code shown for ${email}`}
-              {mode === 'reset' && (email ? `Set a new password for ${email}` : 'Set a new password for your account')}
+              {mode === 'signup' && t('Your private AI wingman for love and relationships')}
+              {mode === 'login' && t('Pick up where you left off')}
+              {mode === 'forgot' && t('Enter the email you signed up with')}
+              {mode === 'verify' && t('Use the 4-digit code shown for {email}', { email })}
+              {mode === 'reset' && (email ? t('Set a new password for {email}', { email }) : t('Set a new password for your account'))}
             </p>
 
             {(mode === 'login' || mode === 'signup') && (
@@ -250,7 +254,7 @@ export const AuthModal: React.FC = () => {
                       mode === m ? 'bg-white text-zinc-900 shadow-xs' : 'text-zinc-500 hover:text-zinc-800'
                     }`}
                   >
-                    {m === 'login' ? 'Sign in' : 'Create account'}
+                    {m === 'login' ? t('Sign in') : t('Create account')}
                   </button>
                 ))}
               </div>
@@ -273,11 +277,11 @@ export const AuthModal: React.FC = () => {
             {mode === 'signup' && (
               <div>
                 <label htmlFor="auth-name" className="block text-xs font-semibold text-zinc-700 mb-1.5">
-                  Your name
+                  {t('Your name')}
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input id="auth-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="What should we call you?" autoComplete="name" className={input} />
+                  <input id="auth-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('What should we call you?')} autoComplete="name" className={input} />
                 </div>
               </div>
             )}
@@ -285,7 +289,7 @@ export const AuthModal: React.FC = () => {
             {mode !== 'verify' && mode !== 'reset' && (
               <div>
                 <label htmlFor="auth-email" className="block text-xs font-semibold text-zinc-700 mb-1.5">
-                  Email address
+                  {t('Email address')}
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -297,7 +301,7 @@ export const AuthModal: React.FC = () => {
             {mode === 'signup' && (
               <div>
                 <label htmlFor="auth-phone" className="block text-xs font-semibold text-zinc-700 mb-1.5">
-                  Mobile number <span className="font-normal text-zinc-400">(optional)</span>
+                  {t('Mobile number')} <span className="font-normal text-zinc-400">{t('(optional)')}</span>
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -316,7 +320,7 @@ export const AuthModal: React.FC = () => {
                 {phone.trim() && (
                   <label className={`mt-2 flex items-start gap-2 text-xs ${phoneValid ? 'text-zinc-600' : 'text-zinc-400'}`}>
                     <input type="checkbox" className="mt-0.5 accent-rose-600" checked={whatsappOptIn && phoneValid} disabled={!phoneValid} onChange={(e) => setWhatsappOptIn(e.target.checked)} />
-                    <span>Send me reminders (birthdays, anniversaries, my plan) on WhatsApp. You can stop anytime.</span>
+                    <span>{t('Send me reminders (birthdays, anniversaries, my plan) on WhatsApp. You can stop anytime.')}</span>
                   </label>
                 )}
               </div>
@@ -326,7 +330,7 @@ export const AuthModal: React.FC = () => {
 
             {mode === 'verify' && (
               <div className="py-2">
-                <p className="block text-xs font-medium text-center text-zinc-700 mb-3">Enter the 4-digit code</p>
+                <p className="block text-xs font-medium text-center text-zinc-700 mb-3">{t('Enter the 4-digit code')}</p>
                 <div className="flex justify-center gap-2">
                   {[0, 1, 2, 3].map((idx) => (
                     <input
@@ -334,7 +338,7 @@ export const AuthModal: React.FC = () => {
                       type="text"
                       inputMode="numeric"
                       maxLength={1}
-                      aria-label={`Digit ${idx + 1}`}
+                      aria-label={t('Digit {n}', { n: idx + 1 })}
                       value={otpCode[idx]}
                       onChange={(e) => {
                         const next = [...otpCode];
@@ -347,9 +351,9 @@ export const AuthModal: React.FC = () => {
                   ))}
                 </div>
                 <p className="text-center text-[11px] text-zinc-500 mt-3">
-                  Didn’t get it?{' '}
+                  {t('Didn’t get it?')}{' '}
                   <button type="button" onClick={issueCode} className="text-rose-600 font-semibold hover:underline">
-                    Show a new code
+                    {t('Show a new code')}
                   </button>
                 </p>
               </div>
@@ -360,11 +364,11 @@ export const AuthModal: React.FC = () => {
               disabled={busy}
               className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-semibold text-sm rounded-xl transition-colors"
             >
-              {mode === 'signup' && 'Create account'}
-              {mode === 'login' && 'Sign in'}
-              {mode === 'forgot' && 'Continue'}
-              {mode === 'verify' && 'Verify code'}
-              {mode === 'reset' && 'Save password & sign in'}
+              {mode === 'signup' && t('Create account')}
+              {mode === 'login' && t('Sign in')}
+              {mode === 'forgot' && t('Continue')}
+              {mode === 'verify' && t('Verify code')}
+              {mode === 'reset' && t('Save password & sign in')}
             </button>
 
             {(mode === 'login' || mode === 'signup') && (
@@ -373,7 +377,7 @@ export const AuthModal: React.FC = () => {
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-zinc-200" />
                   </div>
-                  <span className="relative px-2 text-[10px] uppercase font-semibold text-zinc-400 bg-white">Or</span>
+                  <span className="relative px-2 text-[10px] uppercase font-semibold text-zinc-400 bg-white">{t('Or')}</span>
                 </div>
 
                 <button
@@ -388,12 +392,12 @@ export const AuthModal: React.FC = () => {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                   </svg>
-                  {cloudEnabled ? 'Continue with Google' : 'Continue with Google (demo)'}
+                  {cloudEnabled ? t('Continue with Google') : t('Continue with Google (demo)')}
                 </button>
 
                 {!cloudEnabled && (
                   <button type="button" onClick={handleGuest} className="w-full text-center text-[11px] text-zinc-500 hover:text-zinc-800 transition-colors pt-1">
-                    Explore as a guest
+                    {t('Explore as a guest')}
                   </button>
                 )}
               </>
@@ -401,7 +405,7 @@ export const AuthModal: React.FC = () => {
 
             {(mode === 'forgot' || mode === 'verify' || mode === 'reset') && (
               <button type="button" onClick={() => switchMode('login')} className="w-full text-center text-xs text-zinc-600 hover:text-zinc-900 font-medium">
-                Back to sign in
+                {t('Back to sign in')}
               </button>
             )}
           </form>

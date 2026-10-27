@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bell, BellRing, Globe, Mail, Moon, Send } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useT } from '../../i18n';
 import { Badge, Button, Card, PageContainer, PageHeader } from '../common/UIPrimitives';
 import {
   NOTIFICATION_CATALOG,
@@ -86,6 +87,7 @@ export const NotificationSettingsView: React.FC = () => {
     sendTestNotificationEmail,
     showToast,
   } = useApp();
+  const { t } = useT();
 
   const [sendingTest, setSendingTest] = useState(false);
   const [enablingBrowser, setEnablingBrowser] = useState(false);
@@ -94,9 +96,12 @@ export const NotificationSettingsView: React.FC = () => {
     setSendingTest(true);
     try {
       const res = await sendTestNotificationEmail();
-      showToast(res.message || (res.ok ? `Test email sent to ${user?.email ?? 'your inbox'}.` : "We couldn't send the test email."), res.ok ? 'success' : 'info');
+      showToast(
+        res.message || (res.ok ? t('Test email sent to {email}.', { email: user?.email ?? t('your account email') }) : t("We couldn't send the test email.")),
+        res.ok ? 'success' : 'info'
+      );
     } catch {
-      showToast("We couldn't send the test email. Please try again.", 'info');
+      showToast(t("We couldn't send the test email. Please try again."), 'info');
     } finally {
       setSendingTest(false);
     }
@@ -106,7 +111,7 @@ export const NotificationSettingsView: React.FC = () => {
     setEnablingBrowser(true);
     try {
       const ok = await enableBrowserNotifications();
-      if (ok) showToast('Browser pop-ups are on.', 'success');
+      if (ok) showToast(t('Browser pop-ups are on.'), 'success');
     } finally {
       setEnablingBrowser(false);
     }
@@ -116,64 +121,61 @@ export const NotificationSettingsView: React.FC = () => {
 
   const browserStatus =
     browserNotifications === 'granted' ? (
-      <Badge variant="emerald">On</Badge>
+      <Badge variant="emerald">{t('On')}</Badge>
     ) : browserNotifications === 'denied' ? (
-      <Badge variant="amber">Blocked</Badge>
+      <Badge variant="amber">{t('Blocked')}</Badge>
     ) : browserNotifications === 'unsupported' ? (
-      <Badge variant="zinc">Not available</Badge>
+      <Badge variant="zinc">{t('Not available')}</Badge>
     ) : (
-      <Badge variant="zinc">Off</Badge>
+      <Badge variant="zinc">{t('Off')}</Badge>
     );
 
   return (
     <PageContainer narrow>
       <PageHeader
         icon={<Bell />}
-        title="Notification settings"
-        subtitle="Choose what LoveMate tells you about, and where. Website notifications collect in the bell at the top of the page."
+        title={t('Notification settings')}
+        subtitle={t('Choose what LoveMate tells you about, and where. Website notifications collect in the bell at the top of the page.')}
       />
 
       {/* Channels */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <ChannelCard icon={<Globe />} title="On the website" status={<Badge variant="emerald">Always on</Badge>}>
-          <p>Notifications appear in the bell while you use LoveMate.</p>
+        <ChannelCard icon={<Globe />} title={t('On the website')} status={<Badge variant="emerald">{t('Always on')}</Badge>}>
+          <p>{t('Notifications appear in the bell while you use LoveMate.')}</p>
         </ChannelCard>
 
         <ChannelCard
           icon={<Mail />}
-          title="Email"
-          status={emailNotificationsAvailable ? <Badge variant="emerald">Ready</Badge> : <Badge variant="zinc">Not yet</Badge>}
+          title={t('Email')}
+          status={emailNotificationsAvailable ? <Badge variant="emerald">{t('Ready')}</Badge> : <Badge variant="zinc">{t('Not yet')}</Badge>}
         >
           <p className="break-all">
-            Sent to <span className="font-semibold text-zinc-800">{user?.email || 'your account email'}</span>
+            {t('Sent to')} <span className="font-semibold text-zinc-800">{user?.email || t('your account email')}</span>
           </p>
           {emailNotificationsAvailable ? (
             <Button variant="secondary" size="sm" icon={<Send className="w-3.5 h-3.5" />} loading={sendingTest} onClick={handleTestEmail}>
-              Send test email
+              {t('Send test email')}
             </Button>
           ) : (
-            <p className="text-zinc-400">Email sending isn't switched on for this site yet.</p>
+            <p className="text-zinc-400">{t("Email sending isn't switched on for this site yet.")}</p>
           )}
         </ChannelCard>
 
-        <ChannelCard icon={<BellRing />} title="Browser pop-ups" status={browserStatus}>
-          {browserNotifications === 'granted' && <p>Pop-ups show on this device, even when LoveMate is in another tab.</p>}
+        <ChannelCard icon={<BellRing />} title={t('Browser pop-ups')} status={browserStatus}>
+          {browserNotifications === 'granted' && <p>{t('Pop-ups show on this device, even when LoveMate is in another tab.')}</p>}
           {browserNotifications === 'denied' && (
-            <p>
-              Pop-ups are blocked for this site. To allow them, click the lock or settings icon next to the web address, set
-              Notifications to Allow, then reload the page.
-            </p>
+            <p>{t('Pop-ups are blocked for this site. To allow them, click the lock or settings icon next to the web address, set Notifications to Allow, then reload the page.')}</p>
           )}
           {browserNotifications === 'default' && (
             <>
-              <p>Get a pop-up on this device for reminders that matter.</p>
+              <p>{t('Get a pop-up on this device for reminders that matter.')}</p>
               <Button variant="primary" size="sm" icon={<BellRing className="w-3.5 h-3.5" />} loading={enablingBrowser} onClick={handleEnableBrowser}>
-                Turn on
+                {t('Turn on')}
               </Button>
             </>
           )}
           {browserNotifications === 'unsupported' && (
-            <p className="text-zinc-400">This browser doesn't support pop-up notifications. Website and email notifications still work.</p>
+            <p className="text-zinc-400">{t("This browser doesn't support pop-up notifications. Website and email notifications still work.")}</p>
           )}
         </ChannelCard>
       </div>
@@ -186,12 +188,12 @@ export const NotificationSettingsView: React.FC = () => {
           <Card key={cat.id} padding="none">
             <div className="px-4 sm:px-6 pt-5 pb-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-zinc-100">
               <div>
-                <h2 className="text-base font-bold text-zinc-900">{cat.title}</h2>
-                <p className="text-xs text-zinc-500 mt-0.5">{cat.description}</p>
+                <h2 className="text-base font-bold text-zinc-900">{t(cat.title)}</h2>
+                <p className="text-xs text-zinc-500 mt-0.5">{t(cat.description)}</p>
               </div>
               <div className="hidden sm:grid grid-cols-3 w-[240px] shrink-0 text-center text-[11px] font-bold uppercase tracking-wider text-zinc-400" aria-hidden="true">
                 {CHANNELS.map((c) => (
-                  <span key={c.id}>{c.label}</span>
+                  <span key={c.id}>{t(c.label)}</span>
                 ))}
               </div>
             </div>
@@ -211,23 +213,21 @@ export const NotificationSettingsView: React.FC = () => {
             <Moon className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
             <div>
               <h2 id="quiet-hours-title" className="text-base font-bold text-zinc-900">
-                Quiet hours
+                {t('Quiet hours')}
               </h2>
-              <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
-                No emails or pop-ups during these hours (India time). Website notifications still collect.
-              </p>
+              <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{t('No emails or pop-ups during these hours (India time). Website notifications still collect.')}</p>
             </div>
           </div>
           <Switch
             checked={quiet.enabled}
-            label="Quiet hours"
+            label={t('Quiet hours')}
             onChange={(on) => setQuietHours({ ...quiet, enabled: on })}
           />
         </div>
 
         <div className={`grid grid-cols-2 gap-3 max-w-sm ${quiet.enabled ? '' : 'opacity-50'}`}>
           <label className="block">
-            <span className="block text-xs font-semibold text-zinc-700 mb-1.5">From</span>
+            <span className="block text-xs font-semibold text-zinc-700 mb-1.5">{t('From')}</span>
             <select
               value={quiet.start}
               disabled={!quiet.enabled}
@@ -242,7 +242,7 @@ export const NotificationSettingsView: React.FC = () => {
             </select>
           </label>
           <label className="block">
-            <span className="block text-xs font-semibold text-zinc-700 mb-1.5">Until</span>
+            <span className="block text-xs font-semibold text-zinc-700 mb-1.5">{t('Until')}</span>
             <select
               value={quiet.end}
               disabled={!quiet.enabled}
@@ -258,7 +258,7 @@ export const NotificationSettingsView: React.FC = () => {
           </label>
         </div>
         {quiet.enabled && quiet.start === quiet.end && (
-          <p className="text-xs text-amber-700">Start and end are the same hour, so quiet hours have no effect.</p>
+          <p className="text-xs text-amber-700">{t('Start and end are the same hour, so quiet hours have no effect.')}</p>
         )}
       </Card>
     </PageContainer>
@@ -267,28 +267,29 @@ export const NotificationSettingsView: React.FC = () => {
 
 const PrefRow: React.FC<{ type: NotificationType }> = ({ type }) => {
   const { notificationPrefs, setNotificationChannel } = useApp();
+  const { t } = useT();
   const entry = NOTIFICATION_CATALOG[type];
 
   return (
     <li className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-zinc-900">{entry.label}</p>
-        <p className="text-xs text-zinc-500 leading-relaxed mt-0.5">{entry.description}</p>
+        <p className="text-sm font-semibold text-zinc-900">{t(entry.label)}</p>
+        <p className="text-xs text-zinc-500 leading-relaxed mt-0.5">{t(entry.description)}</p>
       </div>
       <div className="grid grid-cols-3 w-full sm:w-[240px] shrink-0">
         {CHANNELS.map((c) => {
-          const name = `${entry.label}: ${c.label}`;
+          const name = `${t(entry.label)}: ${t(c.label)}`;
           let control: React.ReactNode;
           let note: string | null = null;
           if (c.id === 'email' && entry.noEmail) {
             control = (
-              <span className="h-6 flex items-center text-zinc-400 text-sm" aria-label={`${name} not available`}>
+              <span className="h-6 flex items-center text-zinc-400 text-sm" aria-label={`${name} (${t('Not available')})`}>
                 —
               </span>
             );
           } else if (c.id === 'email' && entry.emailRequired) {
-            control = <Switch checked disabled label={`${name} (always sent)`} />;
-            note = 'always sent';
+            control = <Switch checked disabled label={`${name} (${t('always sent')})`} />;
+            note = t('always sent');
           } else {
             control = (
               <Switch
@@ -301,7 +302,7 @@ const PrefRow: React.FC<{ type: NotificationType }> = ({ type }) => {
           return (
             <div key={c.id} className="flex flex-col items-center gap-1">
               <span className="sm:hidden text-[10px] font-bold uppercase tracking-wider text-zinc-400" aria-hidden="true">
-                {c.label}
+                {t(c.label)}
               </span>
               {control}
               {note && <span className="text-[10px] text-zinc-400 leading-none">{note}</span>}

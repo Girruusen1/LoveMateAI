@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
 import { Compass, Heart, Home, Search, Sparkles, User, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useT } from '../../i18n';
 import { ActiveTab } from '../../types';
 import { resolveTab } from '../../utils/routes';
 import { EXPLORE_GROUPS } from './Navbar';
 
 export const MobileNav: React.FC = () => {
   const { activeTab, setActiveTab, user, openAuthModal } = useApp();
+  const { t } = useT();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [query, setQuery] = useState('');
 
   const q = query.trim().toLowerCase();
   const currentPage = resolveTab(activeTab).tab;
+  // Search matches the English label and its translation, so "decode" and "डिकोड" both work.
+  const matches = (label: string) => label.toLowerCase().includes(q) || t(label).toLowerCase().includes(q);
   const groups = EXPLORE_GROUPS.map((g) => ({
     ...g,
-    items: q ? g.items.filter((i) => i.label.toLowerCase().includes(q) || g.title.toLowerCase().includes(q)) : g.items,
+    items: q ? g.items.filter((i) => matches(i.label) || matches(g.title)) : g.items,
   })).filter((g) => g.items.length > 0);
 
   const go = (tab: ActiveTab) => {
@@ -38,8 +42,8 @@ export const MobileNav: React.FC = () => {
           >
             <div className="w-10 h-1 bg-zinc-300 rounded-full mx-auto mt-3 shrink-0" />
             <div className="flex items-center justify-between px-5 pt-3 pb-3 shrink-0">
-              <h3 className="text-base font-bold text-zinc-900">Explore</h3>
-              <button onClick={() => setSheetOpen(false)} className="w-8 h-8 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center" aria-label="Close">
+              <h3 className="text-base font-bold text-zinc-900">{t('Explore')}</h3>
+              <button onClick={() => setSheetOpen(false)} className="w-8 h-8 rounded-full bg-zinc-100 text-zinc-600 flex items-center justify-center" aria-label={t('Close')}>
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -48,7 +52,7 @@ export const MobileNav: React.FC = () => {
                 <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="search"
-                  placeholder="Search features"
+                  placeholder={t('Search features')}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   className="w-full pl-9 pr-3 h-10 text-sm rounded-xl bg-zinc-100 border border-transparent focus:bg-white focus:border-rose-300 focus:outline-none"
@@ -58,7 +62,7 @@ export const MobileNav: React.FC = () => {
             <div className="overflow-y-auto px-5 pb-8 space-y-5">
               {groups.map((g) => (
                 <div key={g.title}>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">{g.title}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">{t(g.title)}</p>
                   <ul className="grid grid-cols-2 gap-1.5">
                     {g.items.map((item) => {
                       const active = currentPage === item.tab;
@@ -73,7 +77,7 @@ export const MobileNav: React.FC = () => {
                             }`}
                           >
                             {item.icon}
-                            <span className="truncate">{item.label}</span>
+                            <span className="truncate">{t(item.label)}</span>
                           </button>
                         </li>
                       );
@@ -81,7 +85,7 @@ export const MobileNav: React.FC = () => {
                   </ul>
                 </div>
               ))}
-              {groups.length === 0 && <p className="text-sm text-zinc-500 text-center py-8">No features match “{query}”.</p>}
+              {groups.length === 0 && <p className="text-sm text-zinc-500 text-center py-8">{t('No features match “{q}”.', { q: query })}</p>}
             </div>
           </div>
         </div>
@@ -90,23 +94,23 @@ export const MobileNav: React.FC = () => {
       <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-xl border-t border-zinc-200/80 px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] lg:hidden flex items-center justify-around" aria-label="Mobile">
         <button onClick={() => go('home')} className={tabBtn(activeTab === 'home')}>
           <Home className="w-5 h-5" />
-          Home
+          {t('Home')}
         </button>
         <button onClick={() => go('copilot')} className={tabBtn(activeTab === 'copilot')}>
           <Sparkles className="w-5 h-5" />
-          Ask AI
+          {t('Ask AI')}
         </button>
         <button onClick={() => go('our-space')} className={tabBtn(activeTab === 'our-space')}>
           <Heart className={`w-5 h-5 ${activeTab === 'our-space' ? 'fill-rose-500' : ''}`} />
-          Our Space
+          {t('Our Space')}
         </button>
         <button onClick={() => setSheetOpen(true)} className={tabBtn(sheetOpen)}>
           <Compass className="w-5 h-5" />
-          Explore
+          {t('Explore')}
         </button>
         <button onClick={() => (user ? go('profile') : openAuthModal('login'))} className={tabBtn(activeTab === 'profile')}>
           <User className="w-5 h-5" />
-          Profile
+          {t('Profile')}
         </button>
       </nav>
     </>

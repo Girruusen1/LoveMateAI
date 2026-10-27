@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { MAX_TEXT_CHARS } from './config.ts';
 import { RASHIS } from '../../shared/jyotish.ts';
+import { languageLabel } from './prompts.ts';
 import type { TaskDef } from './tasks.ts';
 
 /* Local copies of the small input helpers (importing them from tasks.ts would be circular). */
@@ -15,12 +16,19 @@ const num = (v: unknown, min: number, max: number, dflt: number) => {
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt;
 };
 
-const LANG: Record<string, string> = {
-  english: 'simple, warm English',
-  hinglish: 'natural Hinglish in Roman script (the way friends text; no Devanagari)',
-  hindi: 'simple Hindi in Devanagari script',
+/**
+ * Answer language. `input.language` is the user's preferredLanguage (the browser client fills it in
+ * when the caller does not; rashifal passes it explicitly), so the labels are the same as for every
+ * other task. These tasks are also wrapped by `withLanguage` in tasks.ts, which appends the generic
+ * "reply in <language>, keep JSON keys English" instruction.
+ */
+const TONE: Record<string, string> = {
+  english: 'simple, warm',
+  hinglish: 'natural, the way friends text (no Devanagari)',
+  roman_hindi: 'simple, friendly',
+  hindi: 'simple, friendly',
 };
-const lang = (v: unknown) => LANG[String(v)] ?? LANG.english;
+const lang = (v: unknown) => `${TONE[String(v)] ?? TONE.english} ${languageLabel(v)}`;
 
 /** Shared rules for every Jyotish answer. */
 export const JYOTISH_GUARDRAILS = `Rules for anything about Jyotish (Vedic astrology):

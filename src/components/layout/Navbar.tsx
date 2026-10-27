@@ -37,10 +37,12 @@ import {
   User,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { LanguageSwitch, useT } from '../../i18n';
 import { PLANS } from '../../utils/plans';
 import { resolveTab } from '../../utils/routes';
 import { ActiveTab, CurrencyCode } from '../../types';
 import { LoveMateLogo } from '../common/LoveMateLogo';
+import { ThemeToggle } from '../common/ThemeToggle';
 
 type NavItem = { label: string; tab: ActiveTab; icon: React.ReactNode };
 /** stack: in the desktop mega-menu, show this group under the previous one (keeps the menu five columns wide). */
@@ -153,6 +155,8 @@ export const Navbar: React.FC = () => {
     isAdmin,
   } = useApp();
 
+  const { t } = useT();
+
   const [exploreOpen, setExploreOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const exploreRef = useRef<HTMLDivElement>(null);
@@ -162,9 +166,9 @@ export const Navbar: React.FC = () => {
   const isPaid = plan !== 'free';
   const planLabel =
     trialDaysLeft !== null
-      ? `Plus trial · ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'} left`
+      ? t('Plus trial · {n} days left', { n: trialDaysLeft })
       : planFromPartner
-        ? 'Couple (from your partner)'
+        ? t('Couple (from your partner)')
         : `LoveMate ${PLANS[plan].name}`;
 
   useEffect(() => {
@@ -203,7 +207,7 @@ export const Navbar: React.FC = () => {
       <div className="relative max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
         {/* Brand */}
         <div className="shrink-0 flex items-center gap-2">
-          <button onClick={() => go('home')} className="shrink-0 flex items-center cursor-pointer" aria-label="LoveMate home">
+          <button onClick={() => go('home')} className="shrink-0 flex items-center cursor-pointer" aria-label={t('LoveMate home')}>
             <LoveMateLogo variant="compact" size="md" />
           </button>
         </div>
@@ -220,7 +224,7 @@ export const Navbar: React.FC = () => {
                   active ? 'bg-rose-50 text-rose-700' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
                 }`}
               >
-                {item.label}
+                {t(item.label)}
               </button>
             );
           })}
@@ -233,7 +237,7 @@ export const Navbar: React.FC = () => {
                 exploreOpen || exploreActive ? 'bg-rose-50 text-rose-700' : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
               }`}
             >
-              Explore
+              {t('Explore')}
               <ChevronDown className={`w-4 h-4 transition-transform ${exploreOpen ? 'rotate-180' : ''}`} />
             </button>
 
@@ -243,7 +247,7 @@ export const Navbar: React.FC = () => {
                   <div key={column[0].title} className="space-y-5">
                   {column.map((group) => (
                   <div key={group.title}>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2 px-2">{group.title}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2 px-2">{t(group.title)}</p>
                     <ul className="space-y-0.5">
                       {group.items.map((item) => {
                         const active = currentPage === item.tab;
@@ -258,7 +262,7 @@ export const Navbar: React.FC = () => {
                               }`}
                             >
                               {item.icon}
-                              <span className="truncate">{item.label}</span>
+                              <span className="truncate">{t(item.label)}</span>
                             </button>
                           </li>
                         );
@@ -275,16 +279,18 @@ export const Navbar: React.FC = () => {
 
         {/* Right controls */}
         <div className="flex items-center gap-1 shrink-0">
-          <button onClick={() => setSearchOpen(true)} className={iconBtn} title="Search (Ctrl+K)" aria-label="Search">
+          <button onClick={() => setSearchOpen(true)} className={iconBtn} title={t('Search (Ctrl+K)')} aria-label={t('Search')}>
             <Search className="w-[18px] h-[18px]" />
           </button>
+
+          <ThemeToggle variant="cycle" className="hidden sm:inline-flex" />
 
           {user && (
             <button
               onClick={() => setNotificationsModalOpen(true)}
               className={iconBtn}
-              title="Notifications"
-              aria-label="Notifications"
+              title={t('Notifications')}
+              aria-label={t('Notifications')}
             >
               <Bell className="w-[18px] h-[18px]" />
               {unreadCount > 0 && (
@@ -320,18 +326,18 @@ export const Navbar: React.FC = () => {
                     <p className="text-xs text-zinc-500 truncate">{user.email}</p>
                     <div className="flex items-center gap-3 mt-2.5 text-xs text-zinc-600">
                       <span className="inline-flex items-center gap-1">
-                        <Flame className="w-3.5 h-3.5 text-amber-500" /> {user.streak}-day streak
+                        <Flame className="w-3.5 h-3.5 text-amber-500" /> {t('{n}-day streak', { n: user.streak })}
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <Heart className="w-3.5 h-3.5 text-rose-500" /> {user.points} pts
+                        <Heart className="w-3.5 h-3.5 text-rose-500" /> {t('{n} pts', { n: user.points })}
                       </span>
                     </div>
                   </div>
 
                   <div className="px-4 py-3 border-b border-zinc-100 flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold text-zinc-900">{isPaid ? planLabel : 'Free plan'}</p>
-                      <p className="text-[11px] text-zinc-500">{isPaid ? 'Manage your plan' : 'Unlimited AI tools from ₹' + PLANS.plus.monthlyINR}</p>
+                      <p className="text-xs font-semibold text-zinc-900">{isPaid ? planLabel : t('Free plan')}</p>
+                      <p className="text-[11px] text-zinc-500">{isPaid ? t('Manage your plan') : t('Unlimited AI tools from ₹{price}', { price: PLANS.plus.monthlyINR })}</p>
                     </div>
                     <button
                       onClick={() => {
@@ -340,7 +346,7 @@ export const Navbar: React.FC = () => {
                       }}
                       className="px-3 h-8 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold whitespace-nowrap"
                     >
-                      {isPaid ? 'Plans' : 'Upgrade'}
+                      {isPaid ? t('Plans') : t('Upgrade')}
                     </button>
                   </div>
 
@@ -358,7 +364,7 @@ export const Navbar: React.FC = () => {
                           className="w-full flex items-center gap-2.5 px-4 py-2 text-zinc-700 hover:bg-zinc-50 [&>svg]:w-4 [&>svg]:h-4 [&>svg]:text-zinc-400"
                         >
                           {item.icon}
-                          {item.label}
+                          {t(item.label)}
                         </button>
                       </li>
                     ))}
@@ -371,14 +377,23 @@ export const Navbar: React.FC = () => {
                         className="w-full flex items-center gap-2.5 px-4 py-2 text-zinc-700 hover:bg-zinc-50"
                       >
                         <Sparkles className="w-4 h-4 text-rose-500" />
-                        Surprise me
+                        {t('Surprise me')}
                       </button>
                     </li>
                   </ul>
 
                   <div className="px-4 py-2.5 border-t border-zinc-100 flex items-center justify-between gap-2">
+                    <span className="text-xs text-zinc-500">{t('Language')}</span>
+                    <LanguageSwitch hideIcon />
+                  </div>
+                  <div className="px-4 py-2.5 border-t border-zinc-100 flex items-center justify-between gap-2 sm:hidden">
+                    <span className="text-xs text-zinc-500">{t('Theme')}</span>
+                    <ThemeToggle />
+                  </div>
+
+                  <div className="px-4 py-2.5 border-t border-zinc-100 flex items-center justify-between gap-2">
                     <label className="text-xs text-zinc-500 inline-flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5" /> Currency
+                      <Globe className="w-3.5 h-3.5" /> {t('Currency')}
                     </label>
                     <select
                       value={globalization.currency}
@@ -403,7 +418,7 @@ export const Navbar: React.FC = () => {
                       className="w-full flex items-center gap-2.5 px-4 py-2 text-zinc-500 hover:bg-zinc-50"
                     >
                       <Settings className="w-4 h-4 text-zinc-400" />
-                      Admin console
+                      {t('Admin console')}
                     </button>
                     )}
                     <button
@@ -414,7 +429,7 @@ export const Navbar: React.FC = () => {
                       className="w-full flex items-center gap-2.5 px-4 py-2 text-zinc-700 hover:bg-zinc-50"
                     >
                       <LogOut className="w-4 h-4 text-zinc-400" />
-                      Log out
+                      {t('Log out')}
                     </button>
                   </div>
                 </div>
@@ -426,13 +441,13 @@ export const Navbar: React.FC = () => {
                 onClick={() => openAuthModal('login')}
                 className="hidden sm:inline-flex px-3 h-9 items-center text-sm font-medium text-zinc-700 hover:text-zinc-900 rounded-xl hover:bg-zinc-100"
               >
-                Log in
+                {t('Log in')}
               </button>
               <button
                 onClick={() => openAuthModal('signup')}
                 className="px-3.5 h-9 inline-flex items-center text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl whitespace-nowrap"
               >
-                Get started
+                {t('Get started')}
               </button>
             </div>
           )}

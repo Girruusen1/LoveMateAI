@@ -1,23 +1,9 @@
 import React, { useState } from 'react';
-import {
-  Award,
-  Bell,
-  ChevronRight,
-  Check,
-  Flame,
-  Globe,
-  Heart,
-  Lock,
-  LogOut,
-  Plus,
-  Shield,
-  Sparkles,
-  Trash2,
-  User,
-  Zap,
-} from 'lucide-react';
+import { Award, Bell, ChevronRight, Check, Flame, Heart, LogOut, Shield, Sparkles, Trash2, Zap } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { LanguageSwitch, useT } from '../../i18n';
 import { Language } from '../../types';
+import { ThemeToggle } from '../common/ThemeToggle';
 
 export const ProfileSettingsView: React.FC = () => {
   const {
@@ -37,6 +23,7 @@ export const ProfileSettingsView: React.FC = () => {
     plan,
     setActiveTab,
   } = useApp();
+  const { t } = useT();
 
   const isPro = plan !== 'free';
 
@@ -54,7 +41,7 @@ export const ProfileSettingsView: React.FC = () => {
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingPhone.trim() && !phoneValid) {
-      showToast('Please enter a valid 10-digit Indian mobile number, or leave it empty.', 'info');
+      showToast(t('Please enter a valid 10-digit Indian mobile number, or leave it empty.'), 'info');
       return;
     }
     updateUserPreferences({
@@ -96,7 +83,7 @@ export const ProfileSettingsView: React.FC = () => {
                 </span>
               ) : (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600">
-                  Free Plan
+                  {t('Free Plan')}
                 </span>
               )}
             </div>
@@ -105,14 +92,14 @@ export const ProfileSettingsView: React.FC = () => {
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3">
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
                 <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                {user.streak} Day Streak
+                {t('{n} Day Streak', { n: user.streak })}
               </span>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
                 <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
-                {user.points} Love Points
+                {t('{n} Love Points', { n: user.points })}
               </span>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                {user.vibe}
+                {t(user.vibe)}
               </span>
             </div>
           </div>
@@ -125,12 +112,12 @@ export const ProfileSettingsView: React.FC = () => {
             className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5 shrink-0"
           >
             <Zap className="w-3.5 h-3.5 fill-white" />
-            <span>Upgrade to Pro</span>
+            <span>{t('Upgrade to Pro')}</span>
           </button>
         ) : (
           <div className="px-3.5 py-2 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-1.5 shrink-0">
             <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
-            <span>Pro Active</span>
+            <span>{t('Pro Active')}</span>
           </div>
         )}
       </div>
@@ -141,13 +128,11 @@ export const ProfileSettingsView: React.FC = () => {
           <div>
             <h2 className="text-base font-bold text-zinc-900 flex items-center gap-2">
               <Award className="w-4 h-4 text-amber-500" />
-              Achievements & Badges
+              {t('Achievements & Badges')}
             </h2>
-            <p className="text-xs text-zinc-500">Earn badges through emotional check-ins, tools, and streaks</p>
+            <p className="text-xs text-zinc-500">{t('Earn badges through emotional check-ins, tools, and streaks')}</p>
           </div>
-          <span className="text-xs font-bold text-zinc-700">
-            {badges.filter((b) => b.unlocked).length} / {badges.length} Unlocked
-          </span>
+          <span className="text-xs font-bold text-zinc-700">{t('{a} / {b} Unlocked', { a: badges.filter((b) => b.unlocked).length, b: badges.length })}</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -167,7 +152,7 @@ export const ProfileSettingsView: React.FC = () => {
               </div>
 
               <div className="mt-3 pt-2 border-t border-zinc-200/40 text-[10px] font-semibold text-zinc-500">
-                {b.unlocked ? `Unlocked ${b.unlockedAt || ''}` : 'Locked'}
+                {b.unlocked ? t('Unlocked {date}', { date: b.unlockedAt || '' }) : t('Locked')}
               </div>
             </div>
           ))}
@@ -181,30 +166,29 @@ export const ProfileSettingsView: React.FC = () => {
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-zinc-900 flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-purple-600" />
-                AI Memory Center
+                {t('AI Memory Center')}
               </h2>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-                Privacy-First
+                {t('Privacy-First')}
               </span>
             </div>
             <p className="text-xs text-zinc-500 mt-0.5">
-              Control what LoveMate AI remembers about your preferences, crushes, and relationship stage.
+              {t('Control what LoveMate AI remembers about your preferences, crushes, and relationship stage.')}
             </p>
           </div>
 
           {/* Toggle AI Memory */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-zinc-700">
-              {aiMemoryEnabled ? 'Memory Enabled' : 'Memory Disabled'}
+              {aiMemoryEnabled ? t('Memory Enabled') : t('Memory Disabled')}
             </span>
             <button
               type="button"
+              role="switch"
+              aria-checked={aiMemoryEnabled}
               onClick={() => {
                 setAiMemoryEnabled(!aiMemoryEnabled);
-                showToast(
-                  aiMemoryEnabled ? 'AI Memory disabled' : 'AI Memory enabled',
-                  'info'
-                );
+                showToast(aiMemoryEnabled ? t('AI Memory disabled') : t('AI Memory enabled'), 'info');
               }}
               className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
                 aiMemoryEnabled ? 'bg-rose-600' : 'bg-zinc-300'
@@ -222,13 +206,13 @@ export const ProfileSettingsView: React.FC = () => {
         {/* Stored facts list */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-zinc-700">Remembered Facts ({memories.length})</span>
+            <span className="text-xs font-bold text-zinc-700">{t('Remembered Facts ({n})', { n: memories.length })}</span>
             {memories.length > 0 && (
               <button
                 onClick={clearMemories}
                 className="text-xs font-semibold text-rose-600 hover:underline flex items-center gap-1"
               >
-                Clear all memory
+                {t('Clear all memory')}
               </button>
             )}
           </div>
@@ -247,7 +231,8 @@ export const ProfileSettingsView: React.FC = () => {
                   <button
                     onClick={() => deleteMemory(m.id)}
                     className="p-1 text-zinc-400 hover:text-rose-600 rounded"
-                    title="Delete memory"
+                    title={t('Delete memory')}
+                    aria-label={t('Delete memory')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -255,14 +240,14 @@ export const ProfileSettingsView: React.FC = () => {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-zinc-600 py-2">No active memories stored.</p>
+            <p className="text-xs text-zinc-600 py-2">{t('No active memories stored.')}</p>
           )}
 
           {/* Add custom memory */}
           <form onSubmit={handleAddCustomMemory} className="flex gap-2 pt-2">
             <input
               type="text"
-              placeholder="Tell AI to remember something (e.g., 'My crush likes iced matcha latte')"
+              placeholder={t("Tell AI to remember something (e.g., 'My crush likes iced matcha latte')")}
               value={newMemoryText}
               onChange={(e) => setNewMemoryText(e.target.value)}
               className="flex-1 px-3.5 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-hidden text-zinc-900"
@@ -271,7 +256,7 @@ export const ProfileSettingsView: React.FC = () => {
               type="submit"
               className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold rounded-xl transition-colors"
             >
-              Add Memory
+              {t('Add Memory')}
             </button>
           </form>
         </div>
@@ -279,12 +264,12 @@ export const ProfileSettingsView: React.FC = () => {
 
       {/* 4. PREFERENCES & EDIT PROFILE */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/90 shadow-xs space-y-5">
-        <h2 className="text-base font-bold text-zinc-900">Personal Preferences</h2>
+        <h2 className="text-base font-bold text-zinc-900">{t('Personal Preferences')}</h2>
 
         <form onSubmit={handleSaveProfile} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-zinc-700 mb-1">Your Name</label>
+              <label className="block text-xs font-bold text-zinc-700 mb-1">{t('Your Name')}</label>
               <input
                 type="text"
                 value={editingName}
@@ -294,7 +279,7 @@ export const ProfileSettingsView: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-zinc-700 mb-1">Chat Language</label>
+              <label className="block text-xs font-bold text-zinc-700 mb-1">{t('Chat Language')}</label>
               <select
                 value={editingLanguage}
                 onChange={(e) => setEditingLanguage(e.target.value as Language)}
@@ -302,13 +287,13 @@ export const ProfileSettingsView: React.FC = () => {
               >
                 <option value="hinglish">Hinglish</option>
                 <option value="english">English</option>
-                <option value="roman_hindi">Roman Hindi</option>
-                <option value="hindi">Hindi (Devanagari)</option>
+                <option value="roman_hindi">{t('Roman Hindi')}</option>
+                <option value="hindi">{t('Hindi (Devanagari)')}</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-zinc-700 mb-1">Dating Vibe</label>
+              <label className="block text-xs font-bold text-zinc-700 mb-1">{t('Dating Vibe')}</label>
               <input
                 type="text"
                 value={editingVibe}
@@ -319,7 +304,7 @@ export const ProfileSettingsView: React.FC = () => {
 
             <div>
               <label htmlFor="profile-phone" className="block text-xs font-bold text-zinc-700 mb-1">
-                Mobile number <span className="font-normal text-zinc-400">(optional)</span>
+                {t('Mobile number')} <span className="font-normal text-zinc-400">{t('(optional)')}</span>
               </label>
               <input
                 id="profile-phone"
@@ -338,7 +323,7 @@ export const ProfileSettingsView: React.FC = () => {
                   disabled={!phoneValid}
                   onChange={(e) => setEditingWhatsapp(e.target.checked)}
                 />
-                <span>Send me reminders on WhatsApp. You can turn this off anytime.</span>
+                <span>{t('Send me reminders on WhatsApp. You can turn this off anytime.')}</span>
               </label>
             </div>
           </div>
@@ -348,10 +333,22 @@ export const ProfileSettingsView: React.FC = () => {
               type="submit"
               className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
             >
-              Save Preferences
+              {t('Save Preferences')}
             </button>
           </div>
         </form>
+
+        {/* Interface language + theme: applied instantly, no save needed */}
+        <div className="pt-4 border-t border-zinc-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-zinc-50 border border-zinc-200">
+            <span className="text-xs font-bold text-zinc-700">{t('Interface language')}</span>
+            <LanguageSwitch />
+          </div>
+          <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-zinc-50 border border-zinc-200">
+            <span className="text-xs font-bold text-zinc-700">{t('Theme')}</span>
+            <ThemeToggle showLabels />
+          </div>
+        </div>
       </div>
 
       {/* NOTIFICATIONS */}
@@ -364,8 +361,8 @@ export const ProfileSettingsView: React.FC = () => {
           <Bell className="w-4 h-4" />
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-base font-bold text-zinc-900">Notifications</span>
-          <span className="block text-xs text-zinc-500 mt-0.5">Choose reminders by website, email or browser pop-up, and set quiet hours.</span>
+          <span className="block text-base font-bold text-zinc-900">{t('Notifications')}</span>
+          <span className="block text-xs text-zinc-500 mt-0.5">{t('Choose reminders by website, email or browser pop-up, and set quiet hours.')}</span>
         </span>
         <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
       </button>
@@ -374,11 +371,9 @@ export const ProfileSettingsView: React.FC = () => {
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-zinc-200/90 shadow-xs space-y-4">
         <h2 className="text-base font-bold text-zinc-900 flex items-center gap-2">
           <Shield className="w-4 h-4 text-emerald-600" />
-          Privacy & Account Controls
+          {t('Privacy & Account Controls')}
         </h2>
-        <p className="text-xs text-zinc-500">
-          You are always in complete control of your emotional data. We do not sell your personal chats.
-        </p>
+        <p className="text-xs text-zinc-500">{t('You are always in complete control of your emotional data. We do not sell your personal chats.')}</p>
 
         <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100">
           <button
@@ -386,14 +381,14 @@ export const ProfileSettingsView: React.FC = () => {
             className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-semibold flex items-center gap-1.5 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
+            <span>{t('Sign Out')}</span>
           </button>
 
           <button
             onClick={() => {
               if (
                 window.confirm(
-                  'Are you sure you want to delete your LoveMate account and erase all saved confessions, conversations, and memories? This action cannot be undone.'
+                  t('Are you sure you want to delete your LoveMate account and erase all saved confessions, conversations, and memories? This action cannot be undone.')
                 )
               ) {
                 deleteAccount();
@@ -402,7 +397,7 @@ export const ProfileSettingsView: React.FC = () => {
             className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete Account & Erase All Data</span>
+            <span>{t('Delete Account & Erase All Data')}</span>
           </button>
         </div>
       </div>

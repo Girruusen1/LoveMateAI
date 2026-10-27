@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, FileText, Mail, ReceiptIndianRupee, ShieldCheck } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { BUSINESS, formatAddress, hasPlaceholders } from '../../config/business';
+import { useT } from '../../i18n';
 import { Card, Chip, PageContainer, PageHeader } from '../common/UIPrimitives';
 
 export type LegalPage = 'terms' | 'privacy' | 'refund' | 'contact';
@@ -14,20 +15,21 @@ interface Section {
 const B = BUSINESS;
 const G = B.grievanceOfficer;
 
+/* Tab labels, titles and subtitles go through t() (`{app}` is the app name); the legal text itself stays English. */
 const PAGES: { id: LegalPage; label: string; title: string; icon: React.ReactNode; subtitle: string }[] = [
   {
     id: 'terms',
     label: 'Terms',
     title: 'Terms & Conditions',
     icon: <FileText />,
-    subtitle: `The rules for using ${B.appName}. Please read them before you create an account or buy a plan.`,
+    subtitle: 'The rules for using {app}. Please read them before you create an account or buy a plan.',
   },
   {
     id: 'privacy',
     label: 'Privacy',
     title: 'Privacy Policy',
     icon: <ShieldCheck />,
-    subtitle: `What ${B.appName} collects, why, who it is shared with, and the choices you have.`,
+    subtitle: 'What {app} collects, why, who it is shared with, and the choices you have.',
   },
   {
     id: 'refund',
@@ -41,7 +43,7 @@ const PAGES: { id: LegalPage; label: string; title: string; icon: React.ReactNod
     label: 'Contact',
     title: 'Contact Us',
     icon: <Mail />,
-    subtitle: `How to reach the team behind ${B.appName}.`,
+    subtitle: 'How to reach the team behind {app}.',
   },
 ];
 
@@ -568,6 +570,7 @@ const SECTIONS: Record<Exclude<LegalPage, 'contact'>, Section[]> = {
 
 export const LegalView: React.FC<{ page: LegalPage }> = ({ page }) => {
   const { setActiveTab } = useApp();
+  const { t } = useT();
   const meta = PAGES.find((p) => p.id === page) ?? PAGES[0];
 
   return (
@@ -579,16 +582,18 @@ export const LegalView: React.FC<{ page: LegalPage }> = ({ page }) => {
         </div>
       )}
 
-      <nav className="flex flex-wrap gap-2" aria-label="Policies">
+      <nav className="flex flex-wrap gap-2" aria-label={t('Policies')}>
         {PAGES.map((p) => (
           <Chip key={p.id} selected={p.id === page} onClick={() => setActiveTab(p.id)}>
-            {p.label}
+            {t(p.label)}
           </Chip>
         ))}
       </nav>
 
-      <PageHeader icon={meta.icon} title={meta.title} subtitle={meta.subtitle} />
-      <p className="text-xs text-zinc-500 -mt-3">Last updated: {B.lastUpdated}</p>
+      <PageHeader icon={meta.icon} title={t(meta.title)} subtitle={t(meta.subtitle, { app: B.appName })} />
+      <p className="text-xs text-zinc-500 -mt-3">
+        {t('Last updated:')} {B.lastUpdated}
+      </p>
 
       {page === 'contact' ? (
         <ContactBody />

@@ -1,10 +1,12 @@
 import React from 'react';
 import { Lock } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { LanguageSwitch, useT } from '../../i18n';
 import { ActiveTab } from '../../types';
 import { LoveMateLogo } from '../common/LoveMateLogo';
+import { ThemeToggle } from '../common/ThemeToggle';
 
-/** `member` links only make sense with an account and are hidden from visitors. */
+/** `member` links only make sense with an account and are hidden from visitors. Labels are translated with t(). */
 const LINKS: { label: string; tab: ActiveTab; member?: boolean }[] = [
   { label: 'Ask LoveMate', tab: 'copilot', member: true },
   { label: 'Our Space', tab: 'our-space', member: true },
@@ -24,6 +26,7 @@ const LEGAL_LINKS: { label: string; tab: ActiveTab }[] = [
 
 export const Footer: React.FC = () => {
   const { user, setActiveTab, setProModalOpen, openAuthModal } = useApp();
+  const { t } = useT();
 
   return (
     <footer className="border-t border-zinc-200/80 bg-white pb-24 lg:pb-0">
@@ -33,39 +36,44 @@ export const Footer: React.FC = () => {
             <LoveMateLogo variant="compact" size="md" />
             <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-zinc-500 pl-3 border-l border-zinc-200">
               <Lock className="w-3.5 h-3.5 text-emerald-600" />
-              Private by default
+              {t('Private by default')}
             </span>
           </div>
 
-          <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label="Footer">
+          <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label={t('Footer')}>
             {LINKS.filter((l) => user || !l.member).map((l) => (
               <button key={l.tab} onClick={() => setActiveTab(l.tab)} className="text-zinc-600 hover:text-zinc-900 transition-colors">
-                {l.label}
+                {t(l.label)}
               </button>
             ))}
             {!user && (
               <button onClick={() => openAuthModal('login')} className="text-zinc-600 hover:text-zinc-900 transition-colors">
-                Log in
+                {t('Log in')}
               </button>
             )}
             <button onClick={() => setProModalOpen(true)} className="text-rose-600 hover:text-rose-700 font-medium">
-              {user ? 'LoveMate Pro' : 'Pricing'}
+              {user ? t('LoveMate Pro') : t('Pricing')}
             </button>
           </nav>
         </div>
 
-        <div className="mt-6 pt-5 border-t border-zinc-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-zinc-500">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <div className="mt-6 pt-5 border-t border-zinc-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-zinc-500">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <p>© {new Date().getFullYear()} LoveMate AI</p>
-            <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Policies">
+            <nav className="flex flex-wrap gap-x-4 gap-y-1" aria-label={t('Policies')}>
               {LEGAL_LINKS.map((l) => (
                 <button key={l.tab} onClick={() => setActiveTab(l.tab)} className="hover:text-zinc-900 transition-colors">
-                  {l.label}
+                  {t(l.label)}
                 </button>
               ))}
             </nav>
+            <span className="hidden sm:inline text-zinc-400" aria-hidden="true">
+              ·
+            </span>
+            <LanguageSwitch />
+            <ThemeToggle />
           </div>
-          <p>LoveMate offers relationship insights and playful advice. It is not a substitute for professional counseling.</p>
+          <p className="sm:max-w-md sm:text-right">{t('LoveMate offers relationship insights and playful advice. It is not a substitute for professional counseling.')}</p>
         </div>
       </div>
     </footer>

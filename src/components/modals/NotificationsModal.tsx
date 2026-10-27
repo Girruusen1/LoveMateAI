@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bell, CalendarHeart, CreditCard, Flame, Heart, Settings, Sparkles, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useT } from '../../i18n';
 import type { SmartNotification } from '../../types';
 
 const TYPE_ICON: Record<SmartNotification['type'], { icon: React.ReactNode; className: string }> = {
@@ -22,6 +23,7 @@ export const NotificationsModal: React.FC = () => {
     clearAllNotifications,
     setActiveTab,
   } = useApp();
+  const { t } = useT();
 
   if (!notificationsModalOpen) return null;
 
@@ -55,23 +57,23 @@ export const NotificationsModal: React.FC = () => {
             <div className="flex items-center gap-2 min-w-0">
               <Bell className="w-4 h-4 text-rose-500 shrink-0" />
               <h3 id="notifications-title" className="text-base font-bold text-zinc-900">
-                Notifications
+                {t('Notifications')}
               </h3>
               {unread > 0 && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0">{unread} new</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 shrink-0">{t('{n} new', { n: unread })}</span>
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={openSettings}
-                aria-label="Notification settings"
+                aria-label={t('Notification settings')}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-zinc-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
               >
                 <Settings className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Notification settings</span>
-                <span className="sm:hidden" aria-hidden="true">Settings</span>
+                <span className="hidden sm:inline">{t('Notification settings')}</span>
+                <span className="sm:hidden" aria-hidden="true">{t('Settings')}</span>
               </button>
-              <button onClick={close} className="p-1 text-zinc-400 hover:text-zinc-700 rounded-lg" aria-label="Close notifications">
+              <button onClick={close} className="p-1 text-zinc-400 hover:text-zinc-700 rounded-lg" aria-label={t('Close notifications')}>
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -84,10 +86,8 @@ export const NotificationsModal: React.FC = () => {
                 <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-500 mx-auto flex items-center justify-center">
                   <Bell className="w-6 h-6" />
                 </div>
-                <p className="text-sm font-semibold text-zinc-700">No notifications yet.</p>
-                <p className="text-xs text-zinc-500 max-w-xs mx-auto leading-relaxed">
-                  We'll let you know about your important dates, your partner and your plan.
-                </p>
+                <p className="text-sm font-semibold text-zinc-700">{t('No notifications yet.')}</p>
+                <p className="text-xs text-zinc-500 max-w-xs mx-auto leading-relaxed">{t("We'll let you know about your important dates, your partner and your plan.")}</p>
               </div>
             ) : (
               <ul className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
@@ -114,7 +114,7 @@ export const NotificationsModal: React.FC = () => {
                         <span className="min-w-0 space-y-0.5 block">
                           <span className="flex items-center gap-2">
                             <span className={`text-xs font-bold ${notif.isRead ? 'text-zinc-600' : 'text-zinc-900'}`}>{notif.title}</span>
-                            {!notif.isRead && <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" aria-label="Unread" />}
+                            {!notif.isRead && <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" aria-label={t('Unread')} />}
                           </span>
                           <span className={`block text-xs leading-relaxed ${notif.isRead ? 'text-zinc-500' : 'text-zinc-600'}`}>{notif.body}</span>
                           <span className="text-[10px] text-zinc-400 block pt-0.5">{notif.timestamp}</span>
@@ -123,8 +123,8 @@ export const NotificationsModal: React.FC = () => {
                       <button
                         onClick={() => dismissNotification(notif.id)}
                         className="p-1 text-zinc-300 hover:text-zinc-600 rounded shrink-0"
-                        title="Dismiss"
-                        aria-label={`Dismiss notification: ${notif.title}`}
+                        title={t('Dismiss')}
+                        aria-label={t('Dismiss notification: {title}', { title: notif.title })}
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -141,13 +141,13 @@ export const NotificationsModal: React.FC = () => {
                     onClick={() => notifications.filter((n) => !n.isRead).forEach((n) => markNotificationAsRead(n.id))}
                     className="text-xs font-semibold text-zinc-500 hover:text-rose-600 transition-colors"
                   >
-                    Mark all as read
+                    {t('Mark all as read')}
                   </button>
                 ) : (
                   <span />
                 )}
                 <button onClick={clearAllNotifications} className="text-xs font-semibold text-zinc-400 hover:text-rose-600 transition-colors">
-                  Clear all
+                  {t('Clear all')}
                 </button>
               </div>
             )}
