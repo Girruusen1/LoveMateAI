@@ -1,35 +1,9 @@
-import React from 'react';
-import { LoveCalculatorView } from './components/calculator/LoveCalculatorView';
-import { LoveCardsView } from './components/cards/LoveCardsView';
-import { RelationshipChallengesView } from './components/challenges/RelationshipChallengesView';
-import { AIChatView } from './components/chat/AIChatView';
-import { ChemistryModeView } from './components/chemistry/ChemistryModeView';
-import { CommunicationCoachView } from './components/coach/CommunicationCoachView';
-import { CouplesCoachView } from './components/coach/CouplesCoachView';
+import React, { Suspense, useEffect } from 'react';
 import { ToastContainer } from './components/common/ToastContainer';
-import { ShouldIConfessView } from './components/confess/ShouldIConfessView';
-import { ConfessionStudioView } from './components/confession/ConfessionStudioView';
-import { ConversationCoachView } from './components/copilot/ConversationCoachView';
-import { ReplyCopilotView } from './components/copilot/ReplyCopilotView';
-import { CoupleModeView } from './components/couple/CoupleModeView';
-import { CrushAnalyzerView } from './components/crush/CrushAnalyzerView';
-import { RelationshipDashboardView } from './components/dashboard/RelationshipDashboardView';
-import { DateGiftGeneratorView } from './components/dategift/DateGiftGeneratorView';
-import { GiftIntelligenceView } from './components/dategift/GiftIntelligenceView';
-import { DatePlannerView } from './components/dateplanner/DatePlannerView';
-import { ImportantDatesView } from './components/dates/ImportantDatesView';
-import { RelationshipDetectiveView } from './components/detective/RelationshipDetectiveView';
-import { RelationshipDNAView } from './components/dna/RelationshipDNAView';
-import { CoupleGamesView } from './components/games/CoupleGamesView';
-import { InfiniteGamesView } from './components/games/InfiniteGamesView';
-import { WrappedView } from './components/growth/WrappedView';
-import { RelationshipCheckInView } from './components/health/RelationshipCheckInView';
 import { PersonalizedDashboard } from './components/home/PersonalizedDashboard';
 import { Footer } from './components/layout/Footer';
 import { MobileNav } from './components/layout/MobileNav';
 import { EXPLORE_GROUPS, Navbar } from './components/layout/Navbar';
-import { SavedLibraryView } from './components/library/SavedLibraryView';
-import { MemoryCenterView } from './components/memory/MemoryCenterView';
 import { AuthModal } from './components/modals/AuthModal';
 import { MagicButtonModal } from './components/modals/MagicButtonModal';
 import { NotificationsModal } from './components/modals/NotificationsModal';
@@ -39,49 +13,120 @@ import { SearchModal } from './components/modals/SearchModal';
 import { ShareModal } from './components/modals/ShareModal';
 import { DesignSystemModal } from './components/common/DesignSystemModal';
 import { LogoShowcaseModal } from './components/common/LogoShowcaseModal';
-import { OurStoryMovieView } from './components/movie/OurStoryMovieView';
-import { RelationshipPatternsView } from './components/patterns/RelationshipPatternsView';
-import { RoleplayView } from './components/practice/RoleplayView';
-import { ProfileSettingsView } from './components/profile/ProfileSettingsView';
-import { RelationshipHelperView } from './components/relationship/RelationshipHelperView';
-import { ReplyGeneratorView } from './components/reply/ReplyGeneratorView';
-import { ScrapbookView } from './components/scrapbook/ScrapbookView';
-import { LongDistanceView } from './components/space/LongDistanceView';
-import { OurSpaceView } from './components/space/OurSpaceView';
-import { AILoveStoryView } from './components/story/AILoveStoryView';
-import { OurRealStoryView } from './components/story/OurRealStoryView';
-import { TimelineView } from './components/timeline/TimelineView';
-import { DecodeThisView } from './components/tools/DecodeThisView';
-import { MessageTransformerView } from './components/tools/MessageTransformerView';
-import { RelationshipSignalsView } from './components/tools/RelationshipSignalsView';
-import { ScreenshotAnalyzerView } from './components/tools/ScreenshotAnalyzerView';
-import { TripTogetherView } from './components/travel/TripTogetherView';
-import { VoiceLoveMateView } from './components/voice/VoiceLoveMateView';
-import { WhatIfSimulatorView } from './components/whatif/WhatIfSimulatorView';
-import { WingmanModeView } from './components/wingman/WingmanModeView';
-// V4 Imports
-import { RelationshipCopilotView } from './components/copilot/RelationshipCopilotView';
-import { AgentActivityCenterView } from './components/agent/AgentActivityCenterView';
-import { RelationshipAutopilotView } from './components/autopilot/RelationshipAutopilotView';
-import { CoupleCalendarView } from './components/calendar/CoupleCalendarView';
-import { CoupleWishlistView } from './components/wishlist/CoupleWishlistView';
-import { ExperienceMarketplaceView } from './components/marketplace/ExperienceMarketplaceView';
-import { AdminDashboardView } from './components/admin/AdminDashboardView';
-// V5 Imports
-import { TrustSafetyCenterView } from './components/trust/TrustSafetyCenterView';
-import { ReferralCenterView } from './components/growth/ReferralCenterView';
-import { CustomerSupportView } from './components/support/CustomerSupportView';
-import { LegalView } from './components/legal/LegalView';
-import { NotificationSettingsView } from './components/notifications/NotificationSettingsView';
-// Jyotish
-import { KundliMilanView } from './components/jyotish/KundliMilanView';
-import { MyKundliView } from './components/jyotish/MyKundliView';
-import { RashifalView } from './components/jyotish/RashifalView';
 import { AppProvider, useApp } from './context/AppContext';
 import type { ActiveTab } from './types';
 import { PAGE_PLAN } from './utils/plans';
+import { RETIRED_TABS, resolveTab } from './utils/routes';
+import { lazyView } from './utils/lazy';
 import { FeatureGate } from './components/common/FeatureGate';
 import { GenAIStatusBanner } from './components/common/GenAIStatusBanner';
+import { PageSkeleton } from './components/common/PageSkeleton';
+
+/* Every page but home loads on demand, so the first paint ships only the shell, the landing page and home. */
+
+// Hubs (several tools behind one mode switcher)
+const DecodeHub = lazyView(() => import('./components/hubs/DecodeHub').then((m) => m.DecodeHub));
+const SituationHub = lazyView(() => import('./components/hubs/SituationHub').then((m) => m.SituationHub));
+const ReplyHub = lazyView(() => import('./components/hubs/ReplyHub').then((m) => m.ReplyHub));
+const PlanDateHub = lazyView(() => import('./components/hubs/PlanDateHub').then((m) => m.PlanDateHub));
+const PracticeHub = lazyView(() => import('./components/hubs/PracticeHub').then((m) => m.PracticeHub));
+const InsightsHub = lazyView(() => import('./components/hubs/InsightsHub').then((m) => m.InsightsHub));
+const CoupleHub = lazyView(() => import('./components/hubs/CoupleHub').then((m) => m.CoupleHub));
+const OurStoryHub = lazyView(() => import('./components/hubs/OurStoryHub').then((m) => m.OurStoryHub));
+
+// Standalone tools
+const AIChatView = lazyView(() => import('./components/chat/AIChatView').then((m) => m.AIChatView));
+const RelationshipCopilotView = lazyView(() => import('./components/copilot/RelationshipCopilotView').then((m) => m.RelationshipCopilotView));
+const VoiceLoveMateView = lazyView(() => import('./components/voice/VoiceLoveMateView').then((m) => m.VoiceLoveMateView));
+const ConfessionStudioView = lazyView(() => import('./components/confession/ConfessionStudioView').then((m) => m.ConfessionStudioView));
+const LoveCardsView = lazyView(() => import('./components/cards/LoveCardsView').then((m) => m.LoveCardsView));
+const TripTogetherView = lazyView(() => import('./components/travel/TripTogetherView').then((m) => m.TripTogetherView));
+const ImportantDatesView = lazyView(() => import('./components/dates/ImportantDatesView').then((m) => m.ImportantDatesView));
+const CoupleCalendarView = lazyView(() => import('./components/calendar/CoupleCalendarView').then((m) => m.CoupleCalendarView));
+const CoupleWishlistView = lazyView(() => import('./components/wishlist/CoupleWishlistView').then((m) => m.CoupleWishlistView));
+const WingmanModeView = lazyView(() => import('./components/wingman/WingmanModeView').then((m) => m.WingmanModeView));
+const MemoryCenterView = lazyView(() => import('./components/memory/MemoryCenterView').then((m) => m.MemoryCenterView));
+const OurSpaceView = lazyView(() => import('./components/space/OurSpaceView').then((m) => m.OurSpaceView));
+const CouplesCoachView = lazyView(() => import('./components/coach/CouplesCoachView').then((m) => m.CouplesCoachView));
+const LongDistanceView = lazyView(() => import('./components/space/LongDistanceView').then((m) => m.LongDistanceView));
+const WrappedView = lazyView(() => import('./components/growth/WrappedView').then((m) => m.WrappedView));
+const LoveCalculatorView = lazyView(() => import('./components/calculator/LoveCalculatorView').then((m) => m.LoveCalculatorView));
+
+// Jyotish
+const KundliMilanView = lazyView(() => import('./components/jyotish/KundliMilanView').then((m) => m.KundliMilanView));
+const MyKundliView = lazyView(() => import('./components/jyotish/MyKundliView').then((m) => m.MyKundliView));
+const RashifalView = lazyView(() => import('./components/jyotish/RashifalView').then((m) => m.RashifalView));
+
+// Account, support, admin, legal
+const SavedLibraryView = lazyView(() => import('./components/library/SavedLibraryView').then((m) => m.SavedLibraryView));
+const ProfileSettingsView = lazyView(() => import('./components/profile/ProfileSettingsView').then((m) => m.ProfileSettingsView));
+const NotificationSettingsView = lazyView(() => import('./components/notifications/NotificationSettingsView').then((m) => m.NotificationSettingsView));
+const ReferralCenterView = lazyView(() => import('./components/growth/ReferralCenterView').then((m) => m.ReferralCenterView));
+const CustomerSupportView = lazyView(() => import('./components/support/CustomerSupportView').then((m) => m.CustomerSupportView));
+const TrustSafetyCenterView = lazyView(() => import('./components/trust/TrustSafetyCenterView').then((m) => m.TrustSafetyCenterView));
+const AdminDashboardView = lazyView(() => import('./components/admin/AdminDashboardView').then((m) => m.AdminDashboardView));
+const LegalView = lazyView(() => import('./components/legal/LegalView').then((m) => m.LegalView));
+
+type PageProps = { initialMode?: ActiveTab };
+
+/** What each page renders. Old tool ids are not keys here; resolveTab() maps them to their hub and mode first. */
+const PAGES: Partial<Record<ActiveTab, React.ComponentType<PageProps>>> = {
+  home: PersonalizedDashboard,
+
+  // Hubs
+  'understand-message': DecodeHub,
+  'read-situation': SituationHub,
+  'help-reply': ReplyHub,
+  'plan-date': PlanDateHub,
+  practice: PracticeHub,
+  insights: InsightsHub,
+  couple: CoupleHub,
+  'our-story-hub': OurStoryHub,
+
+  // Talk
+  chat: AIChatView,
+  copilot: () => (<FeatureGate flag="relationship_copilot" featureName="Ask LoveMate"><RelationshipCopilotView /></FeatureGate>),
+  'voice-chat': VoiceLoveMateView,
+
+  // Create & plan
+  confession: ConfessionStudioView,
+  'love-cards': LoveCardsView,
+  'trip-together': TripTogetherView,
+  'important-dates': ImportantDatesView,
+  'couple-calendar': () => (<FeatureGate flag="couple_calendar" featureName="Couple calendar"><CoupleCalendarView /></FeatureGate>),
+  wishlist: () => (<FeatureGate flag="wishlist" featureName="Wishlist"><CoupleWishlistView /></FeatureGate>),
+
+  // Practice & grow
+  'wingman-mode': WingmanModeView,
+  'memory-center': () => (<FeatureGate entitlement="memory_center" featureName="Memory center"><MemoryCenterView /></FeatureGate>),
+
+  // Together
+  'our-space': OurSpaceView,
+  'couple-coach': CouplesCoachView,
+  'long-distance': LongDistanceView,
+  wrapped: WrappedView,
+
+  // Jyotish (free with an account)
+  kundli: KundliMilanView,
+  'my-kundli': MyKundliView,
+  rashifal: RashifalView,
+  calculator: LoveCalculatorView,
+
+  // Account, support, admin
+  library: () => (<FeatureGate requireAuth featureName="Saved library"><SavedLibraryView /></FeatureGate>),
+  profile: () => (<FeatureGate requireAuth featureName="Profile"><ProfileSettingsView /></FeatureGate>),
+  'notification-settings': NotificationSettingsView,
+  referrals: ReferralCenterView,
+  support: CustomerSupportView,
+  'trust-center': TrustSafetyCenterView,
+  'admin-hub': () => (<FeatureGate adminOnly featureName="Admin console"><AdminDashboardView /></FeatureGate>),
+
+  // Legal & business pages (public)
+  terms: () => <LegalView page="terms" />,
+  privacy: () => <LegalView page="privacy" />,
+  refund: () => <LegalView page="refund" />,
+  contact: () => <LegalView page="contact" />,
+};
 
 const LogoModalHost: React.FC = () => {
   const { logoModalOpen, setLogoModalOpen } = useApp();
@@ -112,119 +157,49 @@ const PAGE_NAMES: Partial<Record<ActiveTab, string>> = {
   contact: 'Contact us',
 };
 
-const MainContent: React.FC = () => {
-  const { activeTab, user, hasPlan } = useApp();
+const Main: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">{children}</main>
+);
 
-  if (!user && !PUBLIC_PAGES.has(activeTab)) {
+const MainContent: React.FC = () => {
+  const { activeTab, user, hasPlan, setActiveTab, showToast } = useApp();
+  const page = resolveTab(activeTab);
+
+  // Links to retired pages still work: they land on home with a word of explanation.
+  useEffect(() => {
+    if (RETIRED_TABS.has(activeTab)) {
+      showToast('That page has been retired. Everything you need is on your home page.', 'info');
+      setActiveTab('home');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  if (!user && !PUBLIC_PAGES.has(page.tab)) {
     return (
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <FeatureGate requireAuth featureName={PAGE_NAMES[activeTab] ?? 'LoveMate'}>
+      <Main>
+        <FeatureGate requireAuth featureName={PAGE_NAMES[page.tab] ?? 'LoveMate'}>
           {null}
         </FeatureGate>
-      </main>
+      </Main>
     );
   }
 
-  const neededPlan = PAGE_PLAN[activeTab];
+  const neededPlan = PAGE_PLAN[page.tab];
   if (user && neededPlan && !hasPlan(neededPlan)) {
     return (
-      <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <FeatureGate plan={neededPlan} featureName={PAGE_NAMES[activeTab] ?? 'This tool'}>
+      <Main>
+        <FeatureGate plan={neededPlan} featureName={PAGE_NAMES[page.tab] ?? 'This tool'}>
           {null}
         </FeatureGate>
-      </main>
+      </Main>
     );
   }
 
+  const Page = PAGES[page.tab];
   return (
-    <main className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      {/* Home & Dashboard */}
-      {activeTab === 'home' && <PersonalizedDashboard />}
-
-      {/* Talk Pillar */}
-      {activeTab === 'chat' && <AIChatView />}
-      {activeTab === 'voice-chat' && <VoiceLoveMateView />}
-      {activeTab === 'roleplay' && <RoleplayView />}
-      {activeTab === 'wingman-mode' && <WingmanModeView />}
-      {activeTab === 'conversation-coach' && <ConversationCoachView />}
-      {activeTab === 'reply-copilot' && <ReplyCopilotView />}
-      {activeTab === 'communication-coach' && <CommunicationCoachView />}
-
-      {/* Understand Pillar */}
-      {activeTab === 'decode' && <DecodeThisView />}
-      {activeTab === 'screenshot' && <ScreenshotAnalyzerView />}
-      {activeTab === 'what-if' && <WhatIfSimulatorView />}
-      {activeTab === 'relationship-signals' && <RelationshipSignalsView />}
-      {activeTab === 'calculator' && <LoveCalculatorView />}
-      {activeTab === 'crush-analyzer' && <CrushAnalyzerView />}
-      {activeTab === 'should-confess' && <ShouldIConfessView />}
-      {activeTab === 'health-check' && <RelationshipCheckInView />}
-      {activeTab === 'relationship-helper' && <RelationshipHelperView />}
-      {activeTab === 'relationship-dna' && <RelationshipDNAView />}
-      {activeTab === 'detective' && <RelationshipDetectiveView />}
-      {activeTab === 'relationship-patterns' && <RelationshipPatternsView />}
-      {activeTab === 'memory-center' && (<FeatureGate entitlement="memory_center" featureName="Memory center"><MemoryCenterView /></FeatureGate>)}
-      {activeTab === 'relationship-dashboard' && <RelationshipDashboardView />}
-
-      {/* Create Pillar */}
-      {activeTab === 'confession' && <ConfessionStudioView />}
-      {activeTab === 'reply' && <ReplyGeneratorView />}
-      {activeTab === 'message-transformer' && <MessageTransformerView />}
-      {activeTab === 'love-cards' && <LoveCardsView />}
-      {activeTab === 'date-planner' && <DatePlannerView />}
-      {activeTab === 'date-gift' && <DateGiftGeneratorView />}
-      {activeTab === 'gift-intelligence' && (<FeatureGate flag="gift_intelligence_v2" featureName="Gift ideas"><GiftIntelligenceView /></FeatureGate>)}
-      {activeTab === 'our-story' && <OurRealStoryView />}
-      {activeTab === 'stories' && <AILoveStoryView />}
-      {activeTab === 'scrapbook' && <ScrapbookView />}
-      {activeTab === 'our-story-movie' && <OurStoryMovieView />}
-
-      {/* Play Pillar */}
-      {activeTab === 'games' && <CoupleGamesView />}
-      {activeTab === 'infinite-games' && <InfiniteGamesView />}
-      {activeTab === 'chemistry-mode' && <ChemistryModeView />}
-      {activeTab === 'challenges' && <RelationshipChallengesView />}
-
-      {/* Connect & Remember Pillars */}
-      {activeTab === 'couple-mode' && <CoupleModeView />}
-      {activeTab === 'our-space' && <OurSpaceView />}
-      {activeTab === 'couple-coach' && <CouplesCoachView />}
-      {activeTab === 'long-distance' && <LongDistanceView />}
-      {activeTab === 'timeline' && <TimelineView />}
-      {activeTab === 'important-dates' && <ImportantDatesView />}
-      {activeTab === 'trip-together' && <TripTogetherView />}
-      {activeTab === 'wrapped' && <WrappedView />}
-
-      {/* V4 Autonomous Agent, Copilot & Ecosystem */}
-      {activeTab === 'copilot' && (<FeatureGate flag="relationship_copilot" featureName="Ask LoveMate"><RelationshipCopilotView /></FeatureGate>)}
-      {activeTab === 'agent-activity' && (<FeatureGate entitlement="agent_autonomous" flag="love_agent" featureName="Agent activity"><AgentActivityCenterView /></FeatureGate>)}
-      {activeTab === 'autopilot' && (<FeatureGate entitlement="autopilot" flag="relationship_autopilot" featureName="Autopilot"><RelationshipAutopilotView /></FeatureGate>)}
-      {activeTab === 'couple-calendar' && (<FeatureGate flag="couple_calendar" featureName="Couple calendar"><CoupleCalendarView /></FeatureGate>)}
-      {activeTab === 'wishlist' && (<FeatureGate flag="wishlist" featureName="Wishlist"><CoupleWishlistView /></FeatureGate>)}
-      {activeTab === 'marketplace' && (<FeatureGate entitlement="experience_marketplace" flag="experience_marketplace" featureName="Experiences"><ExperienceMarketplaceView /></FeatureGate>)}
-      {activeTab === 'admin-hub' && (<FeatureGate adminOnly featureName="Admin console"><AdminDashboardView /></FeatureGate>)}
-
-      {/* V5 Systems: Trust, Growth, Support */}
-      {activeTab === 'trust-center' && <TrustSafetyCenterView />}
-      {activeTab === 'referrals' && <ReferralCenterView />}
-      {activeTab === 'support' && <CustomerSupportView />}
-      {activeTab === 'notification-settings' && <NotificationSettingsView />}
-
-      {/* Jyotish (free with an account) */}
-      {activeTab === 'kundli' && <KundliMilanView />}
-      {activeTab === 'my-kundli' && <MyKundliView />}
-      {activeTab === 'rashifal' && <RashifalView />}
-
-      {/* Legal & business pages (public) */}
-      {activeTab === 'terms' && <LegalView page={activeTab} />}
-      {activeTab === 'privacy' && <LegalView page={activeTab} />}
-      {activeTab === 'refund' && <LegalView page={activeTab} />}
-      {activeTab === 'contact' && <LegalView page={activeTab} />}
-
-      {/* Vault & Account */}
-      {activeTab === 'library' && (<FeatureGate requireAuth featureName="Saved library"><SavedLibraryView /></FeatureGate>)}
-      {activeTab === 'profile' && (<FeatureGate requireAuth featureName="Profile"><ProfileSettingsView /></FeatureGate>)}
-    </main>
+    <Main>
+      <Suspense fallback={<PageSkeleton />}>{Page && <Page initialMode={page.mode} />}</Suspense>
+    </Main>
   );
 };
 
@@ -264,4 +239,3 @@ export const App: React.FC = () => {
 };
 
 export default App;
-

@@ -4,7 +4,6 @@ import {
   Bot,
   Camera,
   CheckCircle2,
-  Clapperboard,
   Flame,
   Globe,
   Heart,
@@ -224,11 +223,8 @@ export const OurSpaceView: React.FC = () => {
         subtitle={`A private space shared between ${user?.name || 'you'} and ${partnerName} for memories, goals and conversations.`}
         actions={
           <>
-            <Button variant="secondary" icon={<Heart className="w-4 h-4" />} onClick={() => setActiveTab('our-story')}>
+            <Button variant="primary" icon={<Heart className="w-4 h-4" />} onClick={() => setActiveTab('our-story')}>
               Our Story
-            </Button>
-            <Button variant="primary" icon={<Clapperboard className="w-4 h-4" />} onClick={() => setActiveTab('our-story-movie')}>
-              Watch movie
             </Button>
             <Button variant="secondary" icon={<BookOpen className="w-4 h-4" />} onClick={() => setActiveTab('scrapbook')}>
               Scrapbook
@@ -327,8 +323,8 @@ export const OurSpaceView: React.FC = () => {
               <p className="text-xs text-zinc-500 mt-1">Answer privately and unlock each other's responses simultaneously.</p>
             </div>
 
-            <Button variant="primary" onClick={() => setActiveTab('chemistry-mode')} className="shrink-0">
-              Answer in Chemistry mode
+            <Button variant="primary" onClick={() => setActiveTab('couple-mode')} className="shrink-0">
+              Answer in Couple mode
             </Button>
           </Card>
         </div>

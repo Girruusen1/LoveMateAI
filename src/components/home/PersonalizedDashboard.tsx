@@ -735,7 +735,7 @@ export const PersonalizedDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="pt-3 border-t border-zinc-100 flex items-center justify-end">
-                  <button onClick={() => setActiveTab('agent-activity')} className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1">
+                  <button onClick={() => setActiveTab('copilot')} className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1">
                     Continue <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>

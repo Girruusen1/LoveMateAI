@@ -5,64 +5,45 @@ import {
   BookHeart,
   BookOpen,
   Brain,
+  Calculator,
   Calendar,
   CalendarHeart,
-  Camera,
   ChevronDown,
-  Clapperboard,
   Compass,
-  Dices,
-  Dna,
   Flame,
-  FlaskConical,
   Gamepad2,
   Gift,
   Globe,
   Headphones,
   Heart,
   HeartHandshake,
-  Images,
   LayoutDashboard,
-  LifeBuoy,
-  ListChecks,
   LogOut,
   Mail,
-  MapPinned,
-  MessageCircleHeart,
   MessageSquare,
-  MessageSquareText,
   Mic,
   Moon,
-  Navigation,
   Orbit,
   Palette,
   Plane,
   Radar,
-  Scan,
   Search,
   Settings,
   Shield,
-  ShoppingBag,
   Sparkles,
-  Sprout,
   Star,
-  Store,
   Sun,
-  Target,
   Trophy,
   User,
-  Users,
-  Wand2,
-  Wine,
-  Zap,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { PLANS } from '../../utils/plans';
+import { resolveTab } from '../../utils/routes';
 import { ActiveTab, CurrencyCode } from '../../types';
 import { LoveMateLogo } from '../common/LoveMateLogo';
 
 type NavItem = { label: string; tab: ActiveTab; icon: React.ReactNode };
-/** stack: in the desktop mega-menu, show this group under the previous one (keeps the menu six columns wide). */
+/** stack: in the desktop mega-menu, show this group under the previous one (keeps the menu five columns wide). */
 type NavGroup = { title: string; items: NavItem[]; stack?: boolean };
 
 const PRIMARY: NavItem[] = [
@@ -72,87 +53,65 @@ const PRIMARY: NavItem[] = [
   { label: 'Calendar', tab: 'couple-calendar', icon: <Calendar /> },
 ];
 
+/**
+ * The Explore menu: about twenty clear tools. Several are hubs that hold the older tools as modes
+ * (see ALIASES in utils/routes.ts), so every old link still lands in the right place.
+ */
 export const EXPLORE_GROUPS: NavGroup[] = [
   {
     title: 'Understand',
     items: [
-      { label: 'Decode a message', tab: 'decode', icon: <Search /> },
-      { label: 'Screenshot analyzer', tab: 'screenshot', icon: <Camera /> },
-      { label: 'Reply copilot', tab: 'reply-copilot', icon: <MessageSquareText /> },
-      { label: 'Relationship detective', tab: 'detective', icon: <Scan /> },
-      { label: 'Relationship signals', tab: 'relationship-signals', icon: <Radar /> },
-      { label: 'Does my crush like me?', tab: 'crush-analyzer', icon: <Target /> },
-      { label: 'Should I confess?', tab: 'should-confess', icon: <HeartHandshake /> },
-      { label: 'What if?', tab: 'what-if', icon: <FlaskConical /> },
+      { label: 'Decode a message', tab: 'understand-message', icon: <Search /> },
+      { label: 'Read the situation', tab: 'read-situation', icon: <Radar /> },
     ],
   },
   {
     title: 'Create',
+    stack: true,
     items: [
+      { label: 'Help me reply', tab: 'help-reply', icon: <MessageSquare /> },
       { label: 'Confession studio', tab: 'confession', icon: <Mail /> },
-      { label: 'What should I reply?', tab: 'reply', icon: <MessageSquare /> },
-      { label: 'Make this better', tab: 'message-transformer', icon: <Wand2 /> },
       { label: 'Love cards', tab: 'love-cards', icon: <Palette /> },
-      { label: 'Our story', tab: 'our-story', icon: <BookHeart /> },
-      { label: 'AI love story', tab: 'stories', icon: <BookOpen /> },
-      { label: 'Scrapbook', tab: 'scrapbook', icon: <Images /> },
-      { label: 'Story movie', tab: 'our-story-movie', icon: <Clapperboard /> },
     ],
   },
   {
     title: 'Plan',
     items: [
-      { label: 'Date planner', tab: 'date-planner', icon: <Wine /> },
-      { label: 'Date & gift ideas', tab: 'date-gift', icon: <Gift /> },
-      { label: 'Gift intelligence', tab: 'gift-intelligence', icon: <ShoppingBag /> },
+      { label: 'Date & gift planner', tab: 'plan-date', icon: <Gift /> },
       { label: 'Trip together', tab: 'trip-together', icon: <Plane /> },
-      { label: 'Wishlist', tab: 'wishlist', icon: <Star /> },
       { label: 'Important dates', tab: 'important-dates', icon: <CalendarHeart /> },
-      { label: 'Timeline', tab: 'timeline', icon: <MapPinned /> },
+      { label: 'Couple calendar', tab: 'couple-calendar', icon: <Calendar /> },
+      { label: 'Wishlist', tab: 'wishlist', icon: <Star /> },
     ],
   },
   {
-    title: 'Play & practice',
+    title: 'Practice & grow',
     items: [
-      { label: 'Couple games', tab: 'games', icon: <Gamepad2 /> },
-      { label: 'Infinite games', tab: 'infinite-games', icon: <Dices /> },
-      { label: 'Chemistry mode', tab: 'chemistry-mode', icon: <Zap /> },
-      { label: 'Challenges', tab: 'challenges', icon: <Sprout /> },
-      { label: 'Roleplay practice', tab: 'roleplay', icon: <Headphones /> },
-      { label: 'Voice chat', tab: 'voice-chat', icon: <Mic /> },
+      { label: 'Practice a conversation', tab: 'practice', icon: <Headphones /> },
       { label: 'Wingman mode', tab: 'wingman-mode', icon: <Compass /> },
-      { label: 'Love calculator', tab: 'calculator', icon: <Heart /> },
-    ],
-  },
-  {
-    title: 'Grow',
-    items: [
-      { label: 'Relationship dashboard', tab: 'relationship-dashboard', icon: <Activity /> },
-      { label: 'Check-in', tab: 'health-check', icon: <ListChecks /> },
-      { label: 'Patterns & trends', tab: 'relationship-patterns', icon: <Navigation /> },
-      { label: 'Relationship DNA', tab: 'relationship-dna', icon: <Dna /> },
+      { label: 'Voice chat', tab: 'voice-chat', icon: <Mic /> },
+      { label: 'Check-in & insights', tab: 'insights', icon: <Activity /> },
       { label: 'Memory center', tab: 'memory-center', icon: <Brain /> },
-      { label: 'Couples coach', tab: 'couple-coach', icon: <Users /> },
-      { label: 'Conversation coach', tab: 'conversation-coach', icon: <MessageCircleHeart /> },
-      { label: 'Tone coach', tab: 'communication-coach', icon: <Mic /> },
-      { label: 'Tough moments', tab: 'relationship-helper', icon: <LifeBuoy /> },
     ],
   },
   {
     title: 'Together',
     items: [
-      { label: 'Couple mode', tab: 'couple-mode', icon: <Users /> },
+      { label: 'Our Space', tab: 'our-space', icon: <Heart /> },
+      { label: 'Couple mode', tab: 'couple', icon: <Gamepad2 /> },
+      { label: 'Couples coach', tab: 'couple-coach', icon: <HeartHandshake /> },
       { label: 'Long distance', tab: 'long-distance', icon: <Globe /> },
+      { label: 'Our story', tab: 'our-story-hub', icon: <BookHeart /> },
       { label: 'Wrapped', tab: 'wrapped', icon: <Trophy /> },
     ],
   },
   {
     title: 'Jyotish',
-    stack: true,
     items: [
       { label: 'Kundli Milan', tab: 'kundli', icon: <Orbit /> },
       { label: 'My kundli', tab: 'my-kundli', icon: <Moon /> },
       { label: 'Daily love rashifal', tab: 'rashifal', icon: <Sun /> },
+      { label: 'Love calculator', tab: 'calculator', icon: <Calculator /> },
     ],
   },
 ];
@@ -233,7 +192,8 @@ export const Navbar: React.FC = () => {
     setAccountOpen(false);
   };
 
-  const exploreActive = EXPLORE_GROUPS.some((g) => g.items.some((i) => i.tab === activeTab));
+  const currentPage = resolveTab(activeTab).tab;
+  const exploreActive = EXPLORE_GROUPS.some((g) => g.items.some((i) => i.tab === currentPage));
 
   const iconBtn =
     'w-9 h-9 inline-flex items-center justify-center rounded-xl text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors relative';
@@ -278,7 +238,7 @@ export const Navbar: React.FC = () => {
             </button>
 
             {exploreOpen && (
-              <div className="absolute left-4 right-4 sm:left-6 sm:right-6 lg:left-8 lg:right-8 top-full mt-1 max-h-[75vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-6 grid grid-cols-6 gap-6 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="absolute left-4 right-4 sm:left-6 sm:right-6 lg:left-8 lg:right-8 top-full mt-1 max-h-[75vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-6 grid grid-cols-5 gap-6 animate-in fade-in slide-in-from-top-1 duration-150">
                 {EXPLORE_COLUMNS.map((column) => (
                   <div key={column[0].title} className="space-y-5">
                   {column.map((group) => (
@@ -286,7 +246,7 @@ export const Navbar: React.FC = () => {
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2 px-2">{group.title}</p>
                     <ul className="space-y-0.5">
                       {group.items.map((item) => {
-                        const active = activeTab === item.tab;
+                        const active = currentPage === item.tab;
                         return (
                           <li key={item.tab}>
                             <button

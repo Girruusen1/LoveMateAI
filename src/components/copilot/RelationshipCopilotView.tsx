@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Activity,
   AlertTriangle,
   ArrowRight,
   Bot,
@@ -91,7 +90,6 @@ export const RelationshipCopilotView: React.FC = () => {
             plan,
             actions: [
               { label: 'View couple calendar', tab: 'couple-calendar' },
-              { label: 'View agent activity', tab: 'agent-activity' },
               { label: 'Check wishlist', tab: 'wishlist' },
             ],
           },
@@ -176,14 +174,6 @@ export const RelationshipCopilotView: React.FC = () => {
         subtitle="Tell LoveMate what you want to make happen. It turns the goal into a plan, queues tasks, schedules calendar blocks and keeps partner data private."
         actions={
           <>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<Activity className="w-3.5 h-3.5" />}
-              onClick={() => setActiveTab('agent-activity')}
-            >
-              Activity ({agentTasks.length})
-            </Button>
             <Button
               variant="secondary"
               size="sm"
