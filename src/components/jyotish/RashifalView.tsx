@@ -6,6 +6,7 @@ import { loadBirthDetails } from '../../astro/birthStore';
 import { computeChart } from '../../astro/engine';
 import { fetchRashifal, type RashifalResponse } from '../../services/astroClient';
 import { Badge, Button, Card, PageContainer, PageHeader } from '../common/UIPrimitives';
+import { ShareCardButton } from '../common/ShareCardButton';
 import { JyotishNote, LanguageChips } from './JyotishCommon';
 
 const LANG_KEY = 'lovemate_rashifal_lang_v1';
@@ -113,7 +114,22 @@ export const RashifalView: React.FC = () => {
                 </span>
                 <h2 className="text-xl sm:text-2xl font-serif-romance font-bold text-zinc-900 mt-1">{loading || !r ? 'Reading the stars…' : r.headline}</h2>
               </div>
-              {data && !loading && <Badge variant={data.source === 'ai' ? 'rose' : 'zinc'}>{data.source === 'ai' ? "Today's AI rashifal" : 'Offline rashifal'}</Badge>}
+              <div className="flex items-center gap-2">
+                {data && !loading && <Badge variant={data.source === 'ai' ? 'rose' : 'zinc'}>{data.source === 'ai' ? "Today's AI rashifal" : 'Offline rashifal'}</Badge>}
+                {r && !loading && (
+                  <ShareCardButton
+                    fileName={`lovemate-rashifal-${RASHIS[sign].english.toLowerCase()}`}
+                    spec={{
+                      eyebrow: `Love rashifal · ${dateLabel}`,
+                      hero: RASHIS[sign].symbol,
+                      heroLabel: `${RASHIS[sign].sanskrit} · ${RASHIS[sign].english}`,
+                      headline: r.headline,
+                      lines: [r.overview.length > 140 ? `${r.overview.slice(0, 137).trimEnd()}…` : r.overview, `Lucky colour: ${r.luckyColor} · Lucky number: ${r.luckyNumber}`],
+                      footnote: 'Jyotish is shared as cultural guidance, not a prediction.',
+                    }}
+                  />
+                )}
+              </div>
             </div>
             {loading || !r ? (
               <div className="space-y-3">

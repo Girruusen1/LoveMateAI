@@ -7,6 +7,7 @@ import { computeChart, formatDegree, type BirthDetails, type Chart } from '../..
 import { describeManglik } from '../../astro/gunaMilan';
 import { clearBirthDetails, loadBirthDetails, saveBirthDetails } from '../../astro/birthStore';
 import { Badge, Button, Card, PageContainer, PageHeader, ToolLayout } from '../common/UIPrimitives';
+import { ShareCardButton } from '../common/ShareCardButton';
 import { BirthDetailsForm, JyotishNote } from './JyotishCommon';
 import { detailsFromDraft, draftFromDetails, emptyDraft, type BirthDraft } from './birthDraft';
 import { NorthIndianChart } from './NorthIndianChart';
@@ -27,6 +28,24 @@ export const KundliSummary: React.FC<{ chart: Chart }> = ({ chart }) => {
   const nak = NAKSHATRAS[chart.nakshatra];
   return (
     <div className="space-y-4">
+      {/* Share card: signs only, never the birth date, time or place */}
+      <div className="flex justify-end">
+        <ShareCardButton
+          fileName="lovemate-my-kundli"
+          spec={{
+            eyebrow: 'My kundli',
+            hero: RASHIS[chart.rashi].symbol,
+            heroLabel: `${RASHIS[chart.rashi].sanskrit} rashi`,
+            headline: `${chart.input.name || 'My'} kundli at a glance`,
+            lines: [
+              `Rashi (Moon sign): ${rashiLabel(chart.rashi)}`,
+              `Nakshatra: ${nak.name}, pada ${chart.pada}`,
+              chart.lagnaReliable ? `Lagna: ${rashiLabel(chart.lagna.sign)}` : `Sun sign: ${rashiLabel(chart.vedicSunSign)}`,
+            ],
+            footnote: 'Jyotish is shared as cultural guidance, not a prediction.',
+          }}
+        />
+      </div>
       {chart.warnings.length > 0 && (
         <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1">
           {chart.warnings.map((w) => (

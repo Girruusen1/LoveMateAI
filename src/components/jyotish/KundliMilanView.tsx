@@ -11,6 +11,7 @@ import type { KundliExplanation } from '../../services/aiContentAstro';
 import { isAiLimitError } from '../../utils/aiErrors';
 import { PLANS } from '../../utils/plans';
 import { Badge, Button, Card, PageContainer, PageHeader, ToolLayout } from '../common/UIPrimitives';
+import { ShareCardButton } from '../common/ShareCardButton';
 import { BirthDetailsForm, JyotishNote, LanguageChips } from './JyotishCommon';
 import { detailsFromDraft, draftFromDetails, emptyDraft, type BirthDraft } from './birthDraft';
 import { kundliExplainInput } from './matchInput';
@@ -162,6 +163,24 @@ export const KundliMilanView: React.FC = () => {
     <div className="space-y-4">
       <Card className="space-y-5 animate-in fade-in duration-300">
         <GunaScore guna={result.match.guna} names={[result.boy.input.name || 'Boy', result.girl.input.name || 'Girl']} />
+        {/* Share card: names and scores only, never birth details */}
+        <div className="flex justify-end">
+          <ShareCardButton
+            fileName="lovemate-kundli-milan"
+            spec={{
+              eyebrow: 'Kundli Milan',
+              names: [result.boy.input.name || 'Boy', result.girl.input.name || 'Girl'],
+              hero: `${result.match.guna.total}/36`,
+              heroLabel: 'gunas',
+              headline: result.match.guna.label,
+              lines: [...result.match.guna.kootas]
+                .sort((a, b) => b.points / b.max - a.points / a.max)
+                .slice(0, 3)
+                .map((k) => `${k.name}: ${k.points}/${k.max}`),
+              footnote: 'Jyotish is shared as cultural guidance, not a prediction.',
+            }}
+          />
+        </div>
         {result.match.caveats.length > 0 && (
           <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1">
             {result.match.caveats.map((c) => (
