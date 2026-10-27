@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { FlaskConical, X } from 'lucide-react';
+import { useT } from '../../i18n';
 import { AI_STATUS_EVENT, cachedGenAIStatus, getGenAIStatus, type GenAIStatus } from '../../services/genaiClient';
 
 const DISMISS_KEY = 'lovemate_demo_banner_dismissed_v1';
 
 /** Tells users plainly when AI answers are simulated because no model is configured on the server. */
 export const GenAIStatusBanner: React.FC = () => {
+  const { t, tx } = useT();
   const [status, setStatus] = useState<GenAIStatus | null>(cachedGenAIStatus());
   const [dismissed, setDismissed] = useState(() => {
     try {
@@ -29,9 +31,12 @@ export const GenAIStatusBanner: React.FC = () => {
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center gap-3 text-xs sm:text-sm">
         <FlaskConical className="w-4 h-4 shrink-0 text-amber-600" />
         <p className="flex-1">
-          <span className="font-semibold">Demo mode.</span> AI answers are simulated because no AI key is configured on the server. Add{' '}
-          free <code className="px-1 rounded bg-amber-100">GROQ_API_KEY</code> and <code className="px-1 rounded bg-amber-100">OPENROUTER_API_KEY</code> keys to{' '}
-          <code className="px-1 rounded bg-amber-100">.env.local</code> and restart to turn on real AI.
+          <span className="font-semibold">{t('Demo mode.')}</span> {t('AI answers are simulated because no AI key is configured on the server.')}{' '}
+          {tx('Add free {groq} and {openrouter} keys to {env} and restart to turn on real AI.', {
+            groq: <code className="px-1 rounded bg-amber-100">GROQ_API_KEY</code>,
+            openrouter: <code className="px-1 rounded bg-amber-100">OPENROUTER_API_KEY</code>,
+            env: <code className="px-1 rounded bg-amber-100">.env.local</code>,
+          })}
         </p>
         <button
           onClick={() => {
@@ -42,7 +47,7 @@ export const GenAIStatusBanner: React.FC = () => {
               /* ignore */
             }
           }}
-          aria-label="Dismiss"
+          aria-label={t('Dismiss')}
           className="p-1 rounded-md hover:bg-amber-100 text-amber-700"
         >
           <X className="w-4 h-4" />

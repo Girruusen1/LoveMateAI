@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: `.dark` on <html> (see components/common/theme.ts). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     /* Neutrals - Warm Linen & Cream */
@@ -216,3 +219,291 @@
 @media (prefers-reduced-motion: reduce) {
   .lm-float, .lm-float-slow, .lm-fade-up, .lm-dot { animation: none; }
 }
+
+/* ===========================================================================
+   DARK MODE
+   The views use plain Tailwind colour utilities (bg-white, text-zinc-900, bg-rose-50 …).
+   Instead of touching 55+ files, `.dark` remaps the theme colour variables those
+   utilities read (so every variant – hover:, md:, /opacity, from-/to-, ring- – follows),
+   plus a short list of class overrides for things variables cannot express (white
+   surfaces, arbitrary hex values, "dark on light" text shades). Intentionally dark
+   panels (bg-zinc-900, bg-rose-600 …) get the light palette restored inside them so
+   their white text and muted captions keep working.
+   =========================================================================== */
+.dark {
+  color-scheme: dark;
+
+  /* Semantic tokens */
+  --background: #0c0c0e;
+  --surface: #18181b;
+  --surface-elevated: #1f1f24;
+  --surface-muted: #1c1c20;
+  --foreground: #f4f4f5;
+  --foreground-muted: #c4c4cb;
+  --foreground-subtle: #a1a1aa;
+  --border: #2e2e34;
+  --border-subtle: #232328;
+  --primary-soft: rgb(76 5 25 / 0.45);
+  --primary-subtle: rgb(136 19 55 / 0.45);
+  --secondary-soft: rgb(46 16 101 / 0.45);
+  --secondary-subtle: rgb(76 29 149 / 0.45);
+  --success-soft: rgb(2 44 34 / 0.5);
+  --warning-soft: rgb(69 26 3 / 0.5);
+  --danger-soft: rgb(69 10 10 / 0.5);
+  --info-soft: rgb(8 47 73 / 0.5);
+  --rose-soft: rgb(76 5 25 / 0.45);
+  --rose-light: rgb(136 19 55 / 0.45);
+  --lavender-soft: rgb(46 16 101 / 0.45);
+  --bg-page: #0c0c0e;
+  --bg-card: #18181b;
+  --text-main: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --border-card: #2e2e34;
+
+  /* Surfaces used by the class overrides below */
+  --lm-page: #0c0c0e;
+  --lm-surface: #18181b;
+  --lm-inset: #1f1f24;
+  --lm-border: #2e2e34;
+
+  /* Neutral scale, inverted: light text shades become light, light surfaces become dark. */
+  --color-zinc-50: #1c1c20;
+  --color-zinc-100: #26262c;
+  --color-zinc-200: #313138;
+  --color-zinc-300: #42424a;
+  --color-zinc-400: #8b8b94;
+  --color-zinc-500: #a1a1aa;
+  --color-zinc-600: #c4c4cb;
+  --color-zinc-700: #dcdce0;
+  --color-zinc-800: #ececef;
+  --color-zinc-900: #f4f4f5;
+  --color-zinc-950: #fafafa;
+  --color-stone-50: #1c1c20;
+  --color-stone-100: #26262c;
+  --color-stone-200: #313138;
+  --color-neutral-50: #1c1c20;
+  --color-neutral-100: #26262c;
+  --color-neutral-200: #313138;
+  --color-gray-50: #1c1c20;
+  --color-gray-100: #26262c;
+  --color-gray-200: #313138;
+  --color-slate-50: #1c1c20;
+  --color-slate-100: #26262c;
+  --color-slate-200: #313138;
+
+  /* Accent tints: 50/100/200 become translucent 950/900/800 so chips and banners stay tinted. */
+  --color-rose-50: rgb(76 5 25 / 0.45);
+  --color-rose-100: rgb(136 19 55 / 0.5);
+  --color-rose-200: rgb(159 18 57 / 0.6);
+  --color-pink-50: rgb(80 7 36 / 0.45);
+  --color-pink-100: rgb(131 24 67 / 0.5);
+  --color-pink-200: rgb(157 23 77 / 0.6);
+  --color-emerald-50: rgb(2 44 34 / 0.5);
+  --color-emerald-100: rgb(6 78 59 / 0.5);
+  --color-emerald-200: rgb(6 95 70 / 0.6);
+  --color-green-50: rgb(5 46 22 / 0.5);
+  --color-green-100: rgb(20 83 45 / 0.5);
+  --color-green-200: rgb(22 101 52 / 0.6);
+  --color-teal-50: rgb(4 47 46 / 0.5);
+  --color-teal-100: rgb(19 78 74 / 0.5);
+  --color-teal-200: rgb(17 94 89 / 0.6);
+  --color-amber-50: rgb(69 26 3 / 0.5);
+  --color-amber-100: rgb(120 53 15 / 0.5);
+  --color-amber-200: rgb(146 64 14 / 0.6);
+  --color-yellow-50: rgb(66 32 6 / 0.5);
+  --color-yellow-100: rgb(113 63 18 / 0.5);
+  --color-yellow-200: rgb(133 77 14 / 0.6);
+  --color-orange-50: rgb(67 20 7 / 0.5);
+  --color-orange-100: rgb(124 45 18 / 0.5);
+  --color-orange-200: rgb(154 52 18 / 0.6);
+  --color-red-50: rgb(69 10 10 / 0.5);
+  --color-red-100: rgb(127 29 29 / 0.5);
+  --color-red-200: rgb(153 27 27 / 0.6);
+  --color-blue-50: rgb(23 37 84 / 0.5);
+  --color-blue-100: rgb(30 58 138 / 0.5);
+  --color-blue-200: rgb(30 64 175 / 0.6);
+  --color-sky-50: rgb(8 47 73 / 0.5);
+  --color-sky-100: rgb(12 74 110 / 0.5);
+  --color-sky-200: rgb(7 89 133 / 0.6);
+  --color-indigo-50: rgb(30 27 75 / 0.5);
+  --color-indigo-100: rgb(49 46 129 / 0.5);
+  --color-indigo-200: rgb(55 48 163 / 0.6);
+  --color-purple-50: rgb(59 7 100 / 0.5);
+  --color-purple-100: rgb(88 28 135 / 0.5);
+  --color-purple-200: rgb(107 33 168 / 0.6);
+  --color-violet-50: rgb(46 16 101 / 0.5);
+  --color-violet-100: rgb(76 29 149 / 0.5);
+  --color-violet-200: rgb(91 33 182 / 0.6);
+  --color-fuchsia-50: rgb(74 4 78 / 0.5);
+  --color-fuchsia-100: rgb(112 26 117 / 0.5);
+  --color-fuchsia-200: rgb(134 25 143 / 0.6);
+}
+
+.dark body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+.dark ::selection {
+  background: #881337;
+  color: #ffe4e6;
+}
+
+/* ---- White surfaces & arbitrary hex backgrounds ---- */
+.dark .bg-white,
+.dark .hover\:bg-white:hover,
+.dark .focus\:bg-white:focus,
+.dark .focus-within\:bg-white:focus-within,
+.dark .bg-\[\#FFFFFF\] { background-color: var(--lm-surface); }
+.dark .bg-white\/95 { background-color: rgb(24 24 27 / 0.95); }
+.dark .bg-white\/90 { background-color: rgb(24 24 27 / 0.9); }
+.dark .bg-white\/80 { background-color: rgb(24 24 27 / 0.8); }
+.dark .bg-white\/70 { background-color: rgb(24 24 27 / 0.7); }
+.dark .bg-white\/60 { background-color: rgb(24 24 27 / 0.6); }
+.dark .bg-white\/50 { background-color: rgb(24 24 27 / 0.5); }
+.dark .from-white { --tw-gradient-from: var(--lm-surface); }
+.dark .via-white { --tw-gradient-via: var(--lm-surface); }
+.dark .to-white { --tw-gradient-to: var(--lm-surface); }
+.dark .border-white { border-color: var(--lm-border); }
+
+.dark .bg-\[\#FAF9F8\],
+.dark .bg-\[\#FDFBF7\],
+.dark .bg-\[\#FCFAF7\] { background-color: var(--lm-page); }
+.dark .from-\[\#FAF9F8\] { --tw-gradient-from: var(--lm-page); }
+.dark .bg-\[\#FAF7F2\],
+.dark .bg-\[\#F3EFEA\],
+.dark .bg-\[\#F7F4EE\] { background-color: var(--lm-inset); }
+.dark .border-\[\#EBE5DC\],
+.dark .border-\[\#E8E2D9\],
+.dark .border-\[\#EFE9DF\],
+.dark .border-\[\#E5DFD5\],
+.dark .border-\[\#E8E6E3\] { border-color: var(--lm-border); }
+
+/* A white pill inside a grey track (segmented controls) must stay lighter than its track. */
+.dark :is(.bg-zinc-100, .bg-zinc-50, .bg-zinc-200, .bg-\[\#F3EFEA\]) > .bg-white { background-color: #3a3a42; }
+
+/* ---- "Dark text on light tint" shades become light ---- */
+.dark .text-rose-600, .dark .hover\:text-rose-600:hover { color: #fb7185; }
+.dark .text-rose-700, .dark .hover\:text-rose-700:hover { color: #fda4af; }
+.dark .text-rose-800 { color: #fecdd3; }
+.dark .text-rose-900 { color: #ffe4e6; }
+.dark .text-rose-950 { color: #fff1f2; }
+.dark .text-pink-600 { color: #f472b6; }
+.dark .text-pink-700 { color: #f9a8d4; }
+.dark .text-emerald-600 { color: #34d399; }
+.dark .text-emerald-700 { color: #6ee7b7; }
+.dark .text-emerald-800 { color: #a7f3d0; }
+.dark .text-emerald-900 { color: #d1fae5; }
+.dark .text-emerald-950 { color: #ecfdf5; }
+.dark .text-green-700 { color: #86efac; }
+.dark .text-green-800 { color: #bbf7d0; }
+.dark .text-amber-600 { color: #fbbf24; }
+.dark .text-amber-700 { color: #fcd34d; }
+.dark .text-amber-800 { color: #fde68a; }
+.dark .text-amber-900 { color: #fef3c7; }
+.dark .text-amber-950 { color: #fffbeb; }
+.dark .text-orange-700 { color: #fdba74; }
+.dark .text-orange-800 { color: #fed7aa; }
+.dark .text-red-600 { color: #f87171; }
+.dark .text-red-700 { color: #fca5a5; }
+.dark .text-red-800 { color: #fecaca; }
+.dark .text-red-900 { color: #fee2e2; }
+.dark .text-blue-600 { color: #60a5fa; }
+.dark .text-blue-700 { color: #93c5fd; }
+.dark .text-blue-800 { color: #bfdbfe; }
+.dark .text-blue-900 { color: #dbeafe; }
+.dark .text-sky-700 { color: #7dd3fc; }
+.dark .text-sky-800 { color: #bae6fd; }
+.dark .text-indigo-700 { color: #a5b4fc; }
+.dark .text-indigo-800 { color: #c7d2fe; }
+.dark .text-purple-600 { color: #c084fc; }
+.dark .text-purple-700 { color: #d8b4fe; }
+.dark .text-purple-800 { color: #e9d5ff; }
+.dark .text-purple-900 { color: #f3e8ff; }
+.dark .text-violet-700 { color: #c4b5fd; }
+.dark .text-violet-800 { color: #ddd6fe; }
+
+/* ---- Intentionally dark / saturated panels keep their own palette ---- */
+.dark .bg-zinc-900 { background-color: #27272b; }
+.dark .bg-zinc-800 { background-color: #323237; }
+.dark .hover\:bg-zinc-800:hover { background-color: #3b3b41; }
+.dark .hover\:bg-black:hover { background-color: #000; }
+.dark :is(.bg-zinc-900, .bg-zinc-800, .bg-zinc-950, .bg-black, .bg-\[\#18181B\], .from-zinc-900, .to-zinc-950, .to-neutral-900, .glass-dark-romance,
+           .bg-rose-500, .bg-rose-600, .bg-rose-700, .bg-rose-800, .from-rose-500, .from-rose-600, .from-rose-700, .via-rose-500,
+           .bg-\[\#E11D48\], .bg-\[\#F43F5E\], .bg-\[\#7C3AED\], .bg-\[\#10B981\], .bg-emerald-500, .bg-emerald-600, .bg-purple-500, .bg-purple-600, .bg-amber-500) {
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-pink-50: #fdf2f8;
+  --color-pink-100: #fce7f3;
+  --color-pink-200: #fbcfe8;
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-purple-50: #faf5ff;
+  --color-purple-100: #f3e8ff;
+  --color-purple-200: #e9d5ff;
+}
+.dark :is(.bg-zinc-900, .bg-zinc-800, .bg-zinc-950, .bg-black, .bg-\[\#18181B\], .from-zinc-900, .glass-dark-romance, .bg-rose-500, .bg-rose-600, .bg-rose-700, .from-rose-500, .from-rose-600) .bg-white { background-color: #ffffff; }
+/* …and the coloured text shades inside those panels (e.g. a white CTA with rose text on a rose hero) keep their light-theme values. */
+.dark :is(.bg-zinc-900, .bg-zinc-800, .bg-zinc-950, .bg-black, .bg-\[\#18181B\], .from-zinc-900, .glass-dark-romance, .bg-rose-500, .bg-rose-600, .bg-rose-700, .bg-rose-800, .from-rose-500, .from-rose-600, .from-rose-700) {
+  & .text-rose-600 { color: #e11d48; }
+  & .text-rose-700 { color: #be123c; }
+  & .text-rose-800 { color: #9f1239; }
+  & .text-rose-900 { color: #881337; }
+  & .text-emerald-600 { color: #059669; }
+  & .text-emerald-700 { color: #047857; }
+  & .text-emerald-800 { color: #065f46; }
+  & .text-amber-600 { color: #d97706; }
+  & .text-amber-700 { color: #b45309; }
+  & .text-amber-800 { color: #92400e; }
+  & .text-purple-600 { color: #9333ea; }
+  & .text-purple-700 { color: #7e22ce; }
+  & .text-blue-700 { color: #1d4ed8; }
+}
+
+/* ---- Shadows: softer, and tinted shadows re-tinted ---- */
+.dark :is(.shadow-xs, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) { --tw-shadow-color: rgb(0 0 0 / 0.55); }
+.dark .shadow-rose-200 { --tw-shadow-color: rgb(159 18 57 / 0.35); }
+.dark .shadow-rose-100 { --tw-shadow-color: rgb(136 19 55 / 0.3); }
+
+/* ---- Custom surfaces from the light theme ---- */
+.dark .surface-card {
+  background: var(--lm-surface);
+  border-color: rgb(255 255 255 / 0.08);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4);
+}
+.dark .surface-card-hover:hover {
+  border-color: rgb(244 63 94 / 0.4);
+  box-shadow: 0 4px 20px -2px rgb(244 63 94 / 0.12), 0 2px 6px -1px rgb(0 0 0 / 0.5);
+}
+.dark .glass-nav {
+  background: rgb(12 12 14 / 0.86);
+  border-bottom-color: rgb(255 255 255 / 0.08);
+}
+.dark .glass-sheet { background: rgb(24 24 27 / 0.94); }
+.dark .glass-warm {
+  background: rgb(24 24 27 / 0.82);
+  border-color: rgb(255 255 255 / 0.1);
+}
+.dark .shimmer-loading { background: linear-gradient(90deg, #232328 25%, #2e2e34 50%, #232328 75%); background-size: 200% 100%; }
+.dark .lm-dots-bg { background-image: radial-gradient(rgb(251 113 133 / 0.14) 1px, transparent 1px); }
+.dark ::-webkit-scrollbar-thumb { background: #3a3a42; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #4b4b54; }
+
+/* ---- Images ---- */
+.dark img.lm-screenshot { filter: brightness(0.9); }
+.dark img.lm-legacy-wordmark { filter: brightness(1.6) contrast(1.1); }

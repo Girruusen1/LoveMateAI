@@ -1,8 +1,12 @@
 import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import { applyStoredTheme } from './components/common/theme';
 import App from './App.tsx';
 import { bootstrapCloud } from './services/cloud';
+
+// Apply light/dark before the first paint so there is no flash of the wrong theme.
+applyStoredTheme();
 
 interface BoundaryState {
   error: Error | null;

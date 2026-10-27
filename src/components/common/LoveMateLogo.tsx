@@ -247,7 +247,7 @@ export const LoveMateLogo: React.FC<LoveMateLogoProps> = ({
   const renderWordmark = () => {
     if (currentStyle === 'legacy') {
       const hClass = { sm: 'h-[15px]', md: 'h-[21px]', lg: 'h-7', xl: 'h-10' }[size];
-      return <img src={WORDMARK_LEGACY} alt="LoveMate" className={`${hClass} w-auto ${colorMode === 'dark' ? 'brightness-125' : ''}`} draggable={false} />;
+      return <img src={WORDMARK_LEGACY} alt="LoveMate" className={`lm-legacy-wordmark ${hClass} w-auto ${colorMode === 'dark' ? 'brightness-125' : ''}`} draggable={false} />;
     }
 
     if (currentStyle === 'editorial') {
