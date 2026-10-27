@@ -20,7 +20,11 @@ export interface User {
   /** Optional mobile number (+91…), only with consent; used for WhatsApp reminders later. */
   phone?: string;
   whatsappOptIn?: boolean;
+  /** "What's your situation?" from onboarding; picks the tools shown first. */
+  situation?: Situation;
 }
+
+export type Situation = 'crush' | 'dating' | 'long_distance' | 'engaged' | 'married' | 'complicated';
 
 export interface AIMessage {
   id: string;

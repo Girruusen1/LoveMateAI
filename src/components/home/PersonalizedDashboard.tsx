@@ -24,6 +24,7 @@ import { useApp } from '../../context/AppContext';
 import { WOULD_YOU_RATHER_CARDS } from '../../data/seedData';
 import { useT } from '../../i18n';
 import { copyText } from '../../utils/clipboard';
+import { situationInfo } from '../../utils/situations';
 import { LandingPage } from './LandingPage';
 
 /* ---------------------------------------------------------------------------
@@ -135,6 +136,7 @@ export const PersonalizedDashboard: React.FC = () => {
     setPendingCopilotPrompt,
   } = useApp();
   const { t } = useT();
+  const mySituation = situationInfo(user?.situation);
   const daysLabel = (n: number) => (n === 0 ? t('Today') : n === 1 ? t('Tomorrow') : t('In {n} days', { n }));
 
   const [mode, setMode] = useState<'couple' | 'private'>(() => {
@@ -328,6 +330,36 @@ export const PersonalizedDashboard: React.FC = () => {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* 1b. Your tools: the five tools that fit the situation chosen in onboarding */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base sm:text-lg font-serif-romance font-bold text-zinc-900 tracking-tight">
+            {mySituation ? `${mySituation.emoji} ${t(mySituation.label)}: ${t('your tools')}` : t('Your tools')}
+          </h2>
+          <button onClick={() => setActiveTab('profile')} className="text-xs font-semibold text-rose-600 hover:underline">
+            {mySituation ? t('Change situation') : t("Tell us what's your situation")}
+          </button>
+        </div>
+        {mySituation ? (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+            {mySituation.tools.map((tool) => (
+              <button
+                key={tool.tab}
+                onClick={() => setActiveTab(tool.tab)}
+                className={`${card} rounded-2xl p-3.5 text-left hover:border-rose-300 transition-colors`}
+              >
+                <p className="text-xs font-bold text-zinc-900">{t(tool.label)}</p>
+                <p className="text-[11px] text-zinc-500 mt-1 leading-snug">{t(tool.why)}</p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className={`${card} rounded-2xl p-4 text-sm text-zinc-600`}>
+            {t('Crush, dating, long distance, engaged, married or complicated: tell us once and we put the right five tools first.')}
+          </p>
+        )}
       </section>
 
       {/* 2. Today's question (sealed in couple mode, private reflection otherwise) */}

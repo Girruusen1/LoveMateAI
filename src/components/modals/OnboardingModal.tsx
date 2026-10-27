@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { ArrowRight, Check, Coffee, Compass, Flame, Heart, HeartCrack, Laugh, Mail, MessageCircle, Smile, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useT } from '../../i18n';
-import { Language } from '../../types';
+import { Language, Situation } from '../../types';
+import { SITUATIONS } from '../../utils/situations';
 
 /* Option labels are stored on the user record in English; `t()` only changes what is displayed. */
 const GOAL_OPTIONS = [
@@ -40,6 +41,7 @@ export const OnboardingModal: React.FC = () => {
   const [selectedGoals, setSelectedGoals] = useState<string[]>(['Crush', 'Need conversation help']);
   const [chatLanguage, setChatLanguage] = useState<Language>('hinglish');
   const [vibe, setVibe] = useState('Romantic & Playful');
+  const [situation, setSituation] = useState<Situation | null>(user?.situation ?? null);
 
   // Re-seed the form from the user who just signed up each time the modal opens
   useEffect(() => {
@@ -47,6 +49,7 @@ export const OnboardingModal: React.FC = () => {
       setStep(1);
       setName(user?.name || '');
       setSelectedGoals(user?.goals?.length ? user.goals : []);
+      setSituation(user?.situation ?? null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onboardingOpen]);
@@ -62,12 +65,13 @@ export const OnboardingModal: React.FC = () => {
   };
 
   const handleNext = () => {
-    if (step < 5) {
+    if (step < 6) {
       setStep(step + 1);
     } else {
       completeOnboarding({
         name: name || user?.name || 'Explorer',
         goals: selectedGoals,
+        situation,
         chatLanguage,
         vibe,
       });
@@ -81,7 +85,7 @@ export const OnboardingModal: React.FC = () => {
         <div className="px-6 pt-6 pb-2">
           <div className="flex items-center justify-between text-xs text-zinc-500 mb-2">
             <span className="font-semibold text-rose-600 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" /> {t('Step {step} of 5', { step })}
+              <Sparkles className="w-3.5 h-3.5" /> {t('Step {step} of 6', { step })}
             </span>
             <span className="flex items-center gap-3">
               {t('{pct}% Complete', { pct: Math.round((step / 5) * 100) })}
@@ -124,8 +128,40 @@ export const OnboardingModal: React.FC = () => {
             </div>
           )}
 
-          {/* Step 2: What brings you here? */}
+          {/* Step 2: What is your situation? Picks the five tools shown first on the home page. */}
           {step === 2 && (
+            <div className="space-y-3 animate-in fade-in">
+              <div>
+                <h3 className="text-lg font-bold text-zinc-900">{t("What's your situation right now?")}</h3>
+                <p className="text-xs text-zinc-500 mt-0.5">{t("We'll put the right tools first. You can change this anytime in your profile.")}</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {SITUATIONS.map((opt) => {
+                  const isSelected = situation === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setSituation(opt.id)}
+                      aria-pressed={isSelected}
+                      className={`p-3 rounded-2xl border text-left transition-all flex items-start gap-2.5 ${
+                        isSelected ? 'bg-rose-50/80 border-rose-400 ring-1 ring-rose-200' : 'bg-zinc-50 hover:bg-zinc-100/70 border-zinc-200'
+                      }`}
+                    >
+                      <span className="text-xl leading-none mt-0.5">{opt.emoji}</span>
+                      <span>
+                        <span className="block text-xs font-semibold text-zinc-900">{t(opt.label)}</span>
+                        <span className="block text-[10px] text-zinc-500 leading-tight mt-0.5">{t(opt.description)}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: What brings you here? */}
+          {step === 3 && (
             <div className="space-y-3 animate-in fade-in">
               <div>
                 <h3 className="text-lg font-bold text-zinc-900">{t('What brings you to LoveMate?')}</h3>
@@ -161,8 +197,8 @@ export const OnboardingModal: React.FC = () => {
             </div>
           )}
 
-          {/* Step 3: How do you like to chat? */}
-          {step === 3 && (
+          {/* Step 4: How do you like to chat? */}
+          {step === 4 && (
             <div className="space-y-3 animate-in fade-in">
               <div>
                 <h3 className="text-lg font-bold text-zinc-900">{t('How do you like to chat?')}</h3>
@@ -199,8 +235,8 @@ export const OnboardingModal: React.FC = () => {
             </div>
           )}
 
-          {/* Step 4: What's your vibe? */}
-          {step === 4 && (
+          {/* Step 5: What's your vibe? */}
+          {step === 5 && (
             <div className="space-y-3 animate-in fade-in">
               <div>
                 <h3 className="text-lg font-bold text-zinc-900">{t("What's your primary dating vibe?")}</h3>
@@ -229,8 +265,8 @@ export const OnboardingModal: React.FC = () => {
             </div>
           )}
 
-          {/* Step 5: You're all set */}
-          {step === 5 && (
+          {/* Step 6: You're all set */}
+          {step === 6 && (
             <div className="text-center py-4 space-y-4 animate-in fade-in">
               <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center shadow-lg shadow-rose-200">
                 <Heart className="w-8 h-8 text-white fill-white animate-bounce" />
@@ -272,7 +308,7 @@ export const OnboardingModal: React.FC = () => {
               onClick={handleNext}
               className="py-2.5 px-6 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-xl shadow-md shadow-rose-200 flex items-center gap-2 transition-all hover:scale-102"
             >
-              <span>{step === 5 ? t('Start Exploring') : t('Continue')}</span>
+              <span>{step === 6 ? t('Start Exploring') : t('Continue')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

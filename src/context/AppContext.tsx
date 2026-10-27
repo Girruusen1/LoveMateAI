@@ -49,6 +49,7 @@ import {
   GrowthChallenge,
   ImportantDate,
   Language,
+  Situation,
   LongDistanceState,
   LoveCard,
   LoveMateProfile,
@@ -170,7 +171,7 @@ interface AppContextType {
   accountExists: (email: string) => boolean;
   logout: () => void;
   deleteAccount: () => void;
-  completeOnboarding: (data: { name: string; goals: string[]; chatLanguage: Language; vibe: string }) => void;
+  completeOnboarding: (data: { name: string; goals: string[]; chatLanguage: Language; vibe: string; situation?: Situation | null }) => void;
   updateUserPreferences: (prefs: Partial<User>) => void;
   // Gamification & Points
   addPoints: (amount: number, reason?: string) => void;
@@ -2673,7 +2674,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(() => window.location.replace(window.location.pathname), 600);
   };
 
-  const completeOnboarding = (data: { name: string; goals: string[]; chatLanguage: Language; vibe: string }) => {
+  const completeOnboarding = (data: { name: string; goals: string[]; chatLanguage: Language; vibe: string; situation?: Situation | null }) => {
     setUser((prev) => {
       if (!prev) return null;
       return {
@@ -2682,6 +2683,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         goals: data.goals,
         preferredLanguage: data.chatLanguage,
         vibe: data.vibe,
+        situation: data.situation ?? prev.situation,
         points: prev.points + 100,
       };
     });

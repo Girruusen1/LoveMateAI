@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Award, Bell, ChevronRight, Check, Flame, Heart, LogOut, Shield, Sparkles, Trash2, Zap } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { LanguageSwitch, useT } from '../../i18n';
-import { Language } from '../../types';
+import { Language, Situation } from '../../types';
+import { SITUATIONS } from '../../utils/situations';
 import { ThemeToggle } from '../common/ThemeToggle';
 
 export const ProfileSettingsView: React.FC = () => {
@@ -32,6 +33,7 @@ export const ProfileSettingsView: React.FC = () => {
   const [editingLanguage, setEditingLanguage] = useState<Language>(user?.preferredLanguage || 'hinglish');
   const [editingVibe, setEditingVibe] = useState(user?.vibe || 'Romantic & Playful');
 
+  const [editingSituation, setEditingSituation] = useState<Situation | ''>(user?.situation ?? '');
   const [editingPhone, setEditingPhone] = useState(user?.phone ?? '');
   const [editingWhatsapp, setEditingWhatsapp] = useState(!!user?.whatsappOptIn);
   // Indian mobile number: 10 digits starting 6-9, with or without +91 / spaces.
@@ -48,6 +50,7 @@ export const ProfileSettingsView: React.FC = () => {
       name: editingName,
       preferredLanguage: editingLanguage,
       vibe: editingVibe,
+      situation: editingSituation || undefined,
       phone: editingPhone.trim() ? '+91' + phoneDigits : undefined,
       whatsappOptIn: editingPhone.trim() ? editingWhatsapp : false,
     });
@@ -290,6 +293,24 @@ export const ProfileSettingsView: React.FC = () => {
                 <option value="roman_hindi">{t('Roman Hindi')}</option>
                 <option value="hindi">{t('Hindi (Devanagari)')}</option>
               </select>
+            </div>
+
+            <div>
+              <label htmlFor="profile-situation" className="block text-xs font-bold text-zinc-700 mb-1">{t('My situation')}</label>
+              <select
+                id="profile-situation"
+                value={editingSituation}
+                onChange={(e) => setEditingSituation(e.target.value as Situation | '')}
+                className="w-full px-3 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 font-semibold focus:outline-hidden"
+              >
+                <option value="">{t('Not set')}</option>
+                {SITUATIONS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.emoji} {t(s.label)}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-zinc-500 mt-1">{t('Picks the five tools shown first on your home page.')}</p>
             </div>
 
             <div>
