@@ -73,6 +73,10 @@ import { ReferralCenterView } from './components/growth/ReferralCenterView';
 import { CustomerSupportView } from './components/support/CustomerSupportView';
 import { LegalView } from './components/legal/LegalView';
 import { NotificationSettingsView } from './components/notifications/NotificationSettingsView';
+// Jyotish
+import { KundliMilanView } from './components/jyotish/KundliMilanView';
+import { MyKundliView } from './components/jyotish/MyKundliView';
+import { RashifalView } from './components/jyotish/RashifalView';
 import { AppProvider, useApp } from './context/AppContext';
 import type { ActiveTab } from './types';
 import { PAGE_PLAN } from './utils/plans';
@@ -99,6 +103,9 @@ const PAGE_NAMES: Partial<Record<ActiveTab, string>> = {
   referrals: 'Invite friends',
   support: 'Support',
   'notification-settings': 'Notification settings',
+  kundli: 'Kundli Milan',
+  'my-kundli': 'My kundli',
+  rashifal: 'Daily love rashifal',
   terms: 'Terms & Conditions',
   privacy: 'Privacy Policy',
   refund: 'Refund & Cancellation Policy',
@@ -202,6 +209,11 @@ const MainContent: React.FC = () => {
       {activeTab === 'referrals' && <ReferralCenterView />}
       {activeTab === 'support' && <CustomerSupportView />}
       {activeTab === 'notification-settings' && <NotificationSettingsView />}
+
+      {/* Jyotish (free with an account) */}
+      {activeTab === 'kundli' && <KundliMilanView />}
+      {activeTab === 'my-kundli' && <MyKundliView />}
+      {activeTab === 'rashifal' && <RashifalView />}
 
       {/* Legal & business pages (public) */}
       {activeTab === 'terms' && <LegalView page={activeTab} />}

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type Anthropic from '@anthropic-ai/sdk';
 import { MAX_TEXT_CHARS } from './config.ts';
 import { languageLabel } from './prompts.ts';
+import { ASTRO_TASKS } from './tasksAstro.ts';
 
 type Effort = 'low' | 'medium' | 'high';
 type UserContent = string | Anthropic.Beta.BetaContentBlockParam[];
@@ -523,6 +524,7 @@ export const TASKS = {
       return `Plan a surprise for the user's partner. ${ld ? 'They are in a long-distance relationship, so every step must work remotely (a scheduled call, a delivery to the partner, a shared online activity).' : 'They are in the same city and will be together.'} Stay within budget (costs in Indian rupees) and fit the mood and duration. The surprise should be something the partner would enjoy and feel comfortable with: nothing public or embarrassing unless the mood asks for it, and nothing that needs access to the partner's phone, accounts or location.\nPartner: ${str(i.partnerName, 60) || 'their partner'}\nBudget: ${str(i.budget, 80) || 'moderate'}\nMood and duration: ${str(i.mood, 120) || 'romantic, one evening'}`;
     },
   },
+  ...ASTRO_TASKS,
 } satisfies Record<string, TaskDef>;
 
 export type TaskName = keyof typeof TASKS;

@@ -10,6 +10,7 @@ import { handleGenAI } from './genai/handler.ts';
 import { handlePayments, paymentsEnabled } from './payments/handler.ts';
 import { handleNotify } from './notify/handler.ts';
 import { handleAccount } from './account/handler.ts';
+import { handleAstro } from './astro/handler.ts';
 import { notificationsEnabled, runReminders } from './notify/service.ts';
 import { isConfigured, modelFor, providerChain } from './genai/config.ts';
 
@@ -46,6 +47,7 @@ createServer(async (req, res) => {
     if (await handlePayments(req, res)) return;
     if (await handleNotify(req, res)) return;
     if (await handleAccount(req, res)) return;
+    if (await handleAstro(req, res)) return;
     const url = new URL(req.url ?? '/', 'http://localhost');
     const asset = (await serveStatic(url.pathname)) ?? (await serveStatic('/index.html')); // SPA fallback
     if (!asset) {

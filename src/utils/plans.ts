@@ -88,6 +88,7 @@ export const PLAN_FEATURES: Record<Plan, string[]> = {
     'Love calculator, love cards and couple games',
     'Our Space: link with your partner, memories and streak',
     'Important dates, timeline and check-ins',
+    'Kundli Milan score, my kundli and daily rashifal',
   ],
   plus: [
     'Unlimited chat, decodes, replies and confessions',
@@ -96,6 +97,7 @@ export const PLAN_FEATURES: Record<Plan, string[]> = {
     'AI memory that remembers your story',
     'Date planner, gift ideas and trip planner',
     'Relationship DNA, patterns and Wrapped',
+    'Detailed Kundli Milan report',
   ],
   couple: [
     'Everything in Plus for both partners, one payment',
