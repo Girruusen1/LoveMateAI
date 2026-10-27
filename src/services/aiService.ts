@@ -35,6 +35,8 @@ import {
   AIPromptVersion,
 } from '../types';
 
+import { offlineCompatibility, offlineKundliExplanation, type CompatibilityInput, type KundliExplainInput, type KundliExplanation } from './aiContentAstro';
+
 export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 
@@ -651,40 +653,29 @@ Tell me what your recent interactions have looked like and let's decode it toget
     return `Your story began with ${milestones[0].title} on ${milestones[0].date}. Across every chapter since, your bond has grown from initial curiosity into deep emotional safety. Each milestone marks a conscious decision to choose each other through laughter, growth, and heartfelt presence.`;
   }
 
-  // 13. Existing compatibility & generators preserved
-  static calculateCompatibility(yourName: string, theirName: string, relationshipType: string = 'Crush'): CompatibilityResult {
-    const combined = (yourName.trim() + theirName.trim()).toLowerCase();
-    let hash = 0;
-    for (let i = 0; i < combined.length; i++) {
-      hash = (hash << 5) - hash + combined.charCodeAt(i);
-      hash |= 0;
-    }
-    const seed = Math.abs(hash);
-    const chemistry = 78 + (seed % 19);
-    const communication = 70 + ((seed >> 2) % 24);
-    const personality = 75 + ((seed >> 4) % 21);
-    const emotionalConnection = 74 + ((seed >> 6) % 23);
-    const overallScore = Math.round(chemistry * 0.3 + communication * 0.25 + personality * 0.2 + emotionalConnection * 0.25);
-
-    let verdict = 'Warm Magnetic Affinity ❤️';
-    let aiAnalysis = `There is strong organic chemistry between ${yourName} and ${theirName}. Keep communication honest, playful, and express gratitude for small gestures.`;
-
-    if (overallScore >= 90) {
-      verdict = 'Cosmic Connection & Electric Chemistry 🔥';
-      aiAnalysis = `The synergy between ${yourName} and ${theirName} radiates exceptional emotional ease. You both share a rare balance where playfulness meets genuine vulnerability.`;
-    }
-
+  // The love calculator's numbers come from src/astro (answers, sun signs or Guna Milan); this writes the words offline.
+  static async calculateCompatibility(input: CompatibilityInput): Promise<CompatibilityResult> {
+    await wait(450);
     return {
       id: 'compat_' + Date.now(),
-      yourName,
-      theirName,
-      relationshipType,
-      overallScore,
-      breakdown: { chemistry, communication, personality, emotionalConnection },
-      aiAnalysis,
-      verdict,
+      yourName: input.yourName,
+      theirName: input.theirName,
+      birthdaySelf: input.birthdaySelf,
+      birthdayPartner: input.birthdayPartner,
+      relationshipType: input.relationshipType,
+      overallScore: input.overallScore,
+      breakdown: input.breakdown,
+      mode: input.mode,
+      gunaScore: input.guna?.total,
+      ...offlineCompatibility(input),
       createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     };
+  }
+
+  // Kundli Milan explanation (numbers from the Guna Milan engine)
+  static async explainKundliMatch(input: KundliExplainInput): Promise<KundliExplanation> {
+    await wait(450);
+    return offlineKundliExplanation(input);
   }
 
   static async generateConfession(recipient: string, tone: string, language: Language, length: 'short' | 'medium' | 'long'): Promise<string> {

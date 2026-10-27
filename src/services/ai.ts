@@ -11,7 +11,9 @@
 import { AIService as MockAIService } from './aiService';
 import { getGenAIStatus, runTask, streamChat } from './genaiClient';
 import { uid } from '../utils/uid';
+import type { CompatibilityInput, KundliExplainInput, KundliExplanation } from './aiContentAstro';
 import type {
+  CompatibilityResult,
   AgentActionPlan,
   AgentTaskPriority,
   AgentTaskType,
@@ -260,5 +262,34 @@ export class AIService extends MockAIService {
       sharedGoals: sharedGoals.map((g) => g.title),
     });
     return d.advice;
+  }
+
+  // 23. Love calculator: the numbers are computed locally (src/astro); the model writes the analysis
+  static async calculateCompatibility(input: CompatibilityInput): Promise<CompatibilityResult> {
+    if (!(await live())) return super.calculateCompatibility(input);
+    const d = await runTask<{ verdict: string; analysis: string; strengths: string[]; tip: string }>('compatibility', { ...input });
+    return {
+      id: uid('compat'),
+      yourName: input.yourName,
+      theirName: input.theirName,
+      birthdaySelf: input.birthdaySelf,
+      birthdayPartner: input.birthdayPartner,
+      relationshipType: input.relationshipType,
+      overallScore: input.overallScore,
+      breakdown: input.breakdown,
+      mode: input.mode,
+      gunaScore: input.guna?.total,
+      verdict: d.verdict || input.verdict,
+      aiAnalysis: d.analysis,
+      strengths: d.strengths,
+      tip: d.tip,
+      createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    };
+  }
+
+  // 24. Kundli Milan explanation: the Guna Milan engine decides the points, the model explains them
+  static async explainKundliMatch(input: KundliExplainInput): Promise<KundliExplanation> {
+    if (!(await live())) return super.explainKundliMatch(input);
+    return runTask<KundliExplanation>('kundliExplain', { ...input });
   }
 }

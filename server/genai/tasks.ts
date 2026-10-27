@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type Anthropic from '@anthropic-ai/sdk';
 import { MAX_TEXT_CHARS } from './config.ts';
 import { languageLabel } from './prompts.ts';
+import { ASTRO_TASKS } from './tasksAstro.ts';
 
 type Effort = 'low' | 'medium' | 'high';
 type UserContent = string | Anthropic.Beta.BetaContentBlockParam[];
@@ -313,6 +314,8 @@ export const TASKS = {
       return `Turn the user's goal into an action plan the app can track. The app can add calendar events, wishlist items and reminders, but never sends messages, spends money or books anything without the user's explicit confirmation.\nUser: ${str(u.name, 60)}; partner: ${str(u.partnerName, 60) || 'not specified'}.\n${list(i.memories, 12).length ? `What you remember:\n- ${list(i.memories, 12).join('\n- ')}\n` : ''}\n${quote('Goal', str(i.prompt))}`;
     },
   },
+
+  ...ASTRO_TASKS,
 } satisfies Record<string, TaskDef>;
 
 export type TaskName = keyof typeof TASKS;

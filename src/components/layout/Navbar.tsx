@@ -33,7 +33,9 @@ import {
   MessageSquare,
   MessageSquareText,
   Mic,
+  Moon,
   Navigation,
+  Orbit,
   Palette,
   Plane,
   Radar,
@@ -46,6 +48,7 @@ import {
   Sprout,
   Star,
   Store,
+  Sun,
   Target,
   Trophy,
   User,
@@ -60,7 +63,8 @@ import { ActiveTab, CurrencyCode } from '../../types';
 import { LoveMateLogo } from '../common/LoveMateLogo';
 
 type NavItem = { label: string; tab: ActiveTab; icon: React.ReactNode };
-type NavGroup = { title: string; items: NavItem[] };
+/** stack: in the desktop mega-menu, show this group under the previous one (keeps the menu six columns wide). */
+type NavGroup = { title: string; items: NavItem[]; stack?: boolean };
 
 const PRIMARY: NavItem[] = [
   { label: 'Home', tab: 'home', icon: <LayoutDashboard /> },
@@ -146,7 +150,23 @@ export const EXPLORE_GROUPS: NavGroup[] = [
       { label: 'Wrapped', tab: 'wrapped', icon: <Trophy /> },
     ],
   },
+  {
+    title: 'Jyotish',
+    stack: true,
+    items: [
+      { label: 'Kundli Milan', tab: 'kundli', icon: <Orbit /> },
+      { label: 'My kundli', tab: 'my-kundli', icon: <Moon /> },
+      { label: 'Daily love rashifal', tab: 'rashifal', icon: <Sun /> },
+    ],
+  },
 ];
+
+/** Groups per desktop menu column (a stacked group joins the column before it). */
+const EXPLORE_COLUMNS: NavGroup[][] = EXPLORE_GROUPS.reduce<NavGroup[][]>((cols, g) => {
+  if (g.stack && cols.length) cols[cols.length - 1].push(g);
+  else cols.push([g]);
+  return cols;
+}, []);
 
 const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
   INR: '₹',
@@ -263,7 +283,9 @@ export const Navbar: React.FC = () => {
 
             {exploreOpen && (
               <div className="absolute left-4 right-4 sm:left-6 sm:right-6 lg:left-8 lg:right-8 top-full mt-1 max-h-[75vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-zinc-200 p-6 grid grid-cols-6 gap-6 animate-in fade-in slide-in-from-top-1 duration-150">
-                {EXPLORE_GROUPS.map((group) => (
+                {EXPLORE_COLUMNS.map((column) => (
+                  <div key={column[0].title} className="space-y-5">
+                  {column.map((group) => (
                   <div key={group.title}>
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2 px-2">{group.title}</p>
                     <ul className="space-y-0.5">
@@ -286,6 +308,8 @@ export const Navbar: React.FC = () => {
                         );
                       })}
                     </ul>
+                  </div>
+                  ))}
                   </div>
                 ))}
               </div>

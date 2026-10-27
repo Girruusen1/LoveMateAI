@@ -4,6 +4,7 @@ import { defineConfig, loadEnv, type Connect, type Plugin } from 'vite'
 import { handleGenAI } from './server/genai/handler.ts'
 import { handlePayments } from './server/payments/handler.ts'
 import { handleNotify } from './server/notify/handler.ts'
+import { handleAstro } from './server/astro/handler.ts'
 
 /** Mounts the server-side GenAI gateway (/api/ai/*) and payments (/api/pay/*) inside the dev and preview servers. */
 function genaiGateway(): Plugin {
@@ -12,6 +13,7 @@ function genaiGateway(): Plugin {
       handleGenAI(req, res)
         .then((handled) => handled || handlePayments(req, res))
         .then((handled) => handled || handleNotify(req, res))
+        .then((handled) => handled || handleAstro(req, res))
         .then((handled) => {
           if (!handled) next()
         })

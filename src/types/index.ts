@@ -55,6 +55,12 @@ export interface CompatibilityResult {
   };
   aiAnalysis: string;
   verdict: string;
+  /** 'fun' = answers + sun signs, 'jyotish' = Guna Milan */
+  mode?: 'fun' | 'jyotish';
+  /** Guna Milan points out of 36 (Jyotish mode) */
+  gunaScore?: number;
+  strengths?: string[];
+  tip?: string;
   createdAt: string;
 }
 
@@ -1017,6 +1023,10 @@ export type ActiveTab =
   | 'referrals'
   | 'support'
   | 'notification-settings'
+  // Jyotish (Vedic astrology):
+  | 'kundli'
+  | 'my-kundli'
+  | 'rashifal'
   // Legal / business pages (public):
   | 'terms'
   | 'privacy'
