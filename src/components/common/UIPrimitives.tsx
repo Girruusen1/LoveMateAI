@@ -240,23 +240,38 @@ interface PageHeaderProps {
   className?: string;
 }
 
-/** Left-aligned page title. No emoji, no eyebrow pill, no version tags. */
-export const PageHeader: React.FC<PageHeaderProps> = ({ icon, title, subtitle, actions, className = '' }) => (
-  <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 ${className}`}>
-    <div className="flex items-start gap-3.5 min-w-0">
-      {icon && (
-        <div className="w-11 h-11 shrink-0 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5">
-          {icon}
-        </div>
-      )}
-      <div className="min-w-0">
-        <h1 className="text-2xl sm:text-3xl font-serif-romance font-bold text-zinc-900 tracking-tight leading-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-zinc-500 mt-1 max-w-2xl leading-relaxed">{subtitle}</p>}
+/** True while a page is rendered inside a hub, whose own bar already shows the title and mode chips. */
+export const InsideHubContext = React.createContext(false);
+
+/** Left-aligned page title. No emoji, no eyebrow pill, no version tags. Inside a hub it shrinks to the subtitle and actions. */
+export const PageHeader: React.FC<PageHeaderProps> = ({ icon, title, subtitle, actions, className = '' }) => {
+  const insideHub = React.useContext(InsideHubContext);
+  if (insideHub) {
+    if (!subtitle && !actions) return null;
+    return (
+      <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 ${className}`}>
+        {subtitle ? <p className="text-sm text-zinc-500 max-w-2xl leading-relaxed">{subtitle}</p> : <span />}
+        {actions && <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>}
       </div>
+    );
+  }
+  return (
+    <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 ${className}`}>
+      <div className="flex items-start gap-3.5 min-w-0">
+        {icon && (
+          <div className="w-11 h-11 shrink-0 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center [&>svg]:w-5 [&>svg]:h-5">
+            {icon}
+          </div>
+        )}
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-serif-romance font-bold text-zinc-900 tracking-tight leading-tight">{title}</h1>
+          {subtitle && <p className="text-sm text-zinc-500 mt-1 max-w-2xl leading-relaxed">{subtitle}</p>}
+        </div>
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>}
     </div>
-    {actions && <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div>}
-  </div>
-);
+  );
+};
 
 export const SectionHeading: React.FC<{ title: string; description?: string; action?: React.ReactNode; className?: string }> = ({
   title,

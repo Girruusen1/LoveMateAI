@@ -6,7 +6,7 @@
  * `{name}` placeholders are filled from the optional vars argument.
  *
  * The choice is stored in localStorage (`lovemate_ui_lang_v1`). When nothing is stored it
- * follows the signed-in user's chat language (`preferredLanguage` in `lovemate_user_v2`).
+ * is English, or Hindi when the signed-in user chats in Hindi (`preferredLanguage` in `lovemate_user_v2`).
  */
 import React, { useCallback, useSyncExternalStore } from 'react';
 import { en } from './en';
@@ -53,9 +53,11 @@ function readLanguage(): UiLanguage {
   } catch {
     /* storage unavailable */
   }
+  // Only a Hindi (Devanagari) chat preference changes the interface by itself. Hinglish is the default
+  // chat language for everyone, and most people still expect English menus and buttons; they can
+  // switch the interface to Hinglish from the footer or Profile.
   const pref = getStoredPreferredLanguage();
-  if (pref === 'roman_hindi') return 'hinglish';
-  return isUiLanguage(pref) ? pref : 'english';
+  return pref === 'hindi' ? 'hindi' : 'english';
 }
 
 let current: UiLanguage = readLanguage();

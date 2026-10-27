@@ -7,6 +7,7 @@ import { PAGE_PLAN, PLANS } from '../../utils/plans';
 import { hashToMode, tabToHash } from '../../utils/routes';
 import { FeatureGate } from './FeatureGate';
 import { PageSkeleton } from './PageSkeleton';
+import { InsideHubContext } from './UIPrimitives';
 
 export interface HubMode {
   /** The tool's old tab id. It doubles as the mode in the address (?mode=) and as the key of its plan lock in PAGE_PLAN. */
@@ -145,7 +146,10 @@ export const HubView: React.FC<HubViewProps> = ({ hubId, title, subtitle, icon, 
 
       <div key={mode.id} data-hub-mode={mode.id}>
         <FeatureGate plan={neededPlan} flag={mode.flag} featureName={mode.label}>
-          <Suspense fallback={<PageSkeleton />}>{mode.render()}</Suspense>
+          {/* The hub bar is the page title; inner PageHeaders shrink to their subtitle. */}
+          <InsideHubContext.Provider value={true}>
+            <Suspense fallback={<PageSkeleton />}>{mode.render()}</Suspense>
+          </InsideHubContext.Provider>
         </FeatureGate>
       </div>
     </div>

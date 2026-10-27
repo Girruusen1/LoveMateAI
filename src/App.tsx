@@ -162,14 +162,18 @@ const Main: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 const MainContent: React.FC = () => {
-  const { activeTab, user, hasPlan, setActiveTab, showToast } = useApp();
+  const { activeTab, user, hasPlan, setActiveTab, showToast, setProModalOpen } = useApp();
   const page = resolveTab(activeTab);
 
   // Links to retired pages still work: they land on home with a word of explanation.
+  // "#/pro" is the pricing window, not a page: open it over the home page.
   useEffect(() => {
     if (RETIRED_TABS.has(activeTab)) {
       showToast('That page has been retired. Everything you need is on your home page.', 'info');
       setActiveTab('home');
+    } else if (activeTab === 'pro') {
+      setActiveTab('home');
+      setProModalOpen(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
