@@ -13,6 +13,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { AIService } from '../../services/ai';
 import { CompatibilityResult } from '../../types';
+import { ShareCardButton } from '../common/ShareCardButton';
 import {
   Button,
   Card,
@@ -183,6 +184,22 @@ export const LoveCalculatorView: React.FC = () => {
             >
               Share card
             </Button>
+            <ShareCardButton
+              fileName={`lovemate-love-score-${result.overallScore}`}
+              spec={{
+                eyebrow: 'Love calculator',
+                names: [result.yourName, result.theirName],
+                hero: `${result.overallScore}%`,
+                heroLabel: 'match',
+                headline: result.verdict,
+                lines: [
+                  `Chemistry ${result.breakdown.chemistry}%`,
+                  `Communication ${result.breakdown.communication}%`,
+                  `Emotional connection ${result.breakdown.emotionalConnection}%`,
+                ],
+                footnote: 'For fun and conversation. Real love runs on effort and empathy.',
+              }}
+            />
           </div>
 
           <Button variant="primary" size="sm" onClick={() => setActiveTab('chat')} icon={<MessageCircle className="w-3.5 h-3.5" />}>

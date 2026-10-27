@@ -6,6 +6,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { ShareCardButton } from '../common/ShareCardButton';
 import { Button, PageContainer } from '../common/UIPrimitives';
 
 export const WrappedView: React.FC = () => {
@@ -65,6 +66,23 @@ export const WrappedView: React.FC = () => {
             <Button variant="secondary" size="sm" icon={<Download className="w-3.5 h-3.5" />} onClick={handleDownloadCard}>
               Download
             </Button>
+            <ShareCardButton
+              fileName={`lovemate-wrapped-${loveMateWrapped.year}`}
+              spec={{
+                eyebrow: `Wrapped ${loveMateWrapped.year}`,
+                names: [user?.name || 'You', partnerName],
+                hero: String(loveMateWrapped.daysConnected),
+                heroLabel: 'days connected',
+                headline: 'Our year in numbers',
+                lines: [
+                  `${loveMateWrapped.memoriesCreated} memories created`,
+                  `${loveMateWrapped.challengesCompleted} challenges finished`,
+                  `${coupleStreak}-day best couple streak`,
+                  `Favourite together: ${loveMateWrapped.favoriteActivity}`,
+                ],
+                footnote: loveMateWrapped.yearInOneSentence,
+              }}
+            />
           </div>
         </div>
 

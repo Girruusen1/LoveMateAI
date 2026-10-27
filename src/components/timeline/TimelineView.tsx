@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   BookHeart,
+  Camera,
   Coffee,
   Gem,
   Heart,
@@ -16,6 +17,10 @@ import {
 import { useApp } from '../../context/AppContext';
 import { AIService } from '../../services/ai';
 import { TimelineMilestone } from '../../types';
+import { MAX_PHOTOS_PER_COLLECTION, photoBytes } from '../../utils/images';
+import { resolvePhoto, useItemPhotos } from '../../utils/itemPhotos';
+import { Lightbox } from '../common/Lightbox';
+import { PhotoAttachment } from '../common/PhotoAttachment';
 import {
   Button,
   Chip,
@@ -27,16 +32,35 @@ import {
   Textarea,
 } from '../common/UIPrimitives';
 
+// Photos for milestones that already existed before a photo was added (see src/utils/itemPhotos.ts).
+const TIMELINE_PHOTOS_KEY = 'lovemate_timeline_photos_v1';
+
 export const TimelineView: React.FC = () => {
   const { timelineMilestones, addMilestone, deleteMilestone, addPoints, showToast, triggerConfetti, setActiveTab } = useApp();
+  const { photos: photoOverrides, setPhoto, prune } = useItemPhotos(TIMELINE_PHOTOS_KEY);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [date, setDate] = useState('October 2026');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<TimelineMilestone['type']>('first_date');
+  const [newPhoto, setNewPhoto] = useState<string | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
+
+  // Drop photo overrides for milestones that were deleted.
+  useEffect(() => {
+    prune(new Set(timelineMilestones.map((m) => m.id)));
+  }, [timelineMilestones, prune]);
+
+  // Uploaded (data URL) photos across the timeline; remote sample URLs don't count towards the cap.
+  const uploadedCount = useMemo(
+    () => timelineMilestones.filter((m) => photoBytes(resolvePhoto(photoOverrides, m.id, m.photoUrl)) > 0).length,
+    [timelineMilestones, photoOverrides]
+  );
+  const canAddPhoto = uploadedCount < MAX_PHOTOS_PER_COLLECTION;
+  const photoLimitMessage = `Your timeline holds up to ${MAX_PHOTOS_PER_COLLECTION} photos. Remove one to add another.`;
 
   // `emoji` is stored on the milestone record (TimelineMilestone.icon); `icon` is the lucide element used in the picker.
   const milestoneTypes: { id: TimelineMilestone['type']; label: string; emoji: string; icon: React.ReactNode }[] = [
@@ -50,6 +74,11 @@ export const TimelineView: React.FC = () => {
     { id: 'anniversary', label: 'Anniversary', emoji: '💍', icon: <Gem /> },
     { id: 'custom', label: 'Custom milestone', emoji: '✨', icon: <Sparkles /> },
   ];
+
+  const openAddForm = () => {
+    setNewPhoto(null);
+    setIsModalOpen(true);
+  };
 
   const handleCreateMilestone = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,11 +94,25 @@ export const TimelineView: React.FC = () => {
       description,
       type,
       icon: selectedTypeObj?.emoji || '❤️',
+      // Stored on the milestone itself so it persists and syncs with the rest of the milestone.
+      photoUrl: newPhoto || undefined,
     });
 
     setTitle('');
     setDescription('');
+    setNewPhoto(null);
     setIsModalOpen(false);
+  };
+
+  const handleMilestonePhoto = (m: TimelineMilestone, dataUrl: string | null) => {
+    if (dataUrl) {
+      setPhoto(m.id, dataUrl);
+      showToast('Photo added to your milestone', 'success');
+      return;
+    }
+    // Removing: hide the milestone's own photo ('' tombstone) or clear the override.
+    setPhoto(m.id, m.photoUrl ? '' : null);
+    showToast('Photo removed', 'info');
   };
 
   const handleSummarizeJourney = async () => {
@@ -106,7 +149,7 @@ export const TimelineView: React.FC = () => {
             >
               Summarize journey
             </Button>
-            <Button variant="primary" onClick={() => setIsModalOpen(true)} icon={<Plus className="w-4 h-4" />}>
+            <Button variant="primary" onClick={openAddForm} icon={<Plus className="w-4 h-4" />}>
               Add milestone
             </Button>
           </>
@@ -132,45 +175,77 @@ export const TimelineView: React.FC = () => {
       {timelineMilestones.length === 0 ? (
         <EmptyState
           icon={<Heart className="w-6 h-6" />}
-          title="No milestones yet"
-          description="Add your first meeting, first date or any moment that matters to you both."
-          actionLabel="Add milestone"
-          onAction={() => setIsModalOpen(true)}
+          title="Start your timeline"
+          description="Your timeline is the story of you two, one milestone at a time: the day you met, the first trip, the first 'I love you'. Add a photo to each if you like."
+          actionLabel="Add your first milestone"
+          onAction={openAddForm}
+          secondaryActionLabel="Invite your partner"
+          onSecondaryAction={() => setActiveTab('couple-mode')}
         />
       ) : (
         <div className="relative pl-6 sm:pl-8 border-l-2 border-rose-200/80 space-y-6 my-2">
-          {timelineMilestones.map((m) => (
-            <div key={m.id} className="relative">
-              {/* Timeline node icon (stored milestone content) */}
-              <div className="absolute -left-[35px] sm:-left-[43px] top-1 w-9 h-9 rounded-full bg-white border-2 border-rose-400 text-base flex items-center justify-center shadow-2xs">
-                {m.icon || '❤️'}
-              </div>
-
-              {/* Content card */}
-              <div className="p-5 rounded-2xl bg-white border border-zinc-200 shadow-2xs hover:border-rose-200 transition-all space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">
-                    {m.date}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => deleteMilestone(m.id)}
-                    className="p-1.5 text-zinc-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
-                    title="Delete milestone"
-                    aria-label="Delete milestone"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+          {timelineMilestones.map((m) => {
+            const photo = resolvePhoto(photoOverrides, m.id, m.photoUrl);
+            return (
+              <div key={m.id} className="relative">
+                {/* Timeline node icon (stored milestone content) */}
+                <div className="absolute -left-[35px] sm:-left-[43px] top-1 w-9 h-9 rounded-full bg-white border-2 border-rose-400 text-base flex items-center justify-center shadow-2xs">
+                  {m.icon || '❤️'}
                 </div>
 
-                <h3 className="text-sm sm:text-base font-bold text-zinc-900">{m.title}</h3>
-                <p className="text-sm text-zinc-600 leading-relaxed">{m.description}</p>
+                {/* Content card */}
+                <div className="rounded-2xl bg-white border border-zinc-200 shadow-2xs hover:border-rose-200 transition-all overflow-hidden">
+                  {photo && (
+                    <button
+                      type="button"
+                      onClick={() => setLightboxSrc(photo)}
+                      className="block w-full h-44 sm:h-56 bg-zinc-100 cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50"
+                      aria-label={`View photo for ${m.title}`}
+                      data-testid="milestone-photo"
+                    >
+                      <img src={photo} alt={m.title} className="w-full h-full object-cover" loading="lazy" />
+                    </button>
+                  )}
+
+                  <div className="p-5 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-full">
+                        {m.date}
+                      </span>
+
+                      <div className="flex items-center gap-1">
+                        <PhotoAttachment
+                          value={photo}
+                          onChange={(url) => handleMilestonePhoto(m, url)}
+                          onOpen={setLightboxSrc}
+                          canAdd={canAddPhoto}
+                          disabledReason={photoLimitMessage}
+                          alt={m.title}
+                          showThumb={false}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => deleteMilestone(m.id)}
+                          className="p-1.5 text-zinc-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                          title="Delete milestone"
+                          aria-label="Delete milestone"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <h3 className="text-sm sm:text-base font-bold text-zinc-900">{m.title}</h3>
+                    <p className="text-sm text-zinc-600 leading-relaxed">{m.description}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
+
+      <Lightbox src={lightboxSrc} alt="Milestone photo" onClose={() => setLightboxSrc(null)} />
 
       {/* Add Milestone Modal */}
       {isModalOpen && (
@@ -217,6 +292,23 @@ export const TimelineView: React.FC = () => {
                   placeholder="What was said, how did it feel, or why does it matter to you?"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <FieldLabel hint="optional">
+                  <span className="inline-flex items-center gap-1">
+                    <Camera className="w-3.5 h-3.5" /> Photo
+                  </span>
+                </FieldLabel>
+                <PhotoAttachment
+                  value={newPhoto}
+                  onChange={setNewPhoto}
+                  onOpen={setLightboxSrc}
+                  canAdd={canAddPhoto}
+                  disabledReason={photoLimitMessage}
+                  layout="card"
+                  alt="Milestone photo"
                 />
               </div>
 

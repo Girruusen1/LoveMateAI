@@ -249,12 +249,22 @@ export const MemoryCenterView: React.FC = () => {
       </div>
 
       {/* Memory cards */}
-      {filteredMemories.length === 0 ? (
+      {userMemories.length === 0 ? (
+        <EmptyState
+          icon={<Brain className="w-6 h-6" />}
+          title="Teach LoveMate what matters"
+          description="Memory Center is where LoveMate keeps the little things, like how they take their coffee or a date you never want to miss, so its advice fits your real relationship."
+          actionLabel="Add your first memory"
+          onAction={() => setShowAddModal(true)}
+          secondaryActionLabel="Invite your partner"
+          onSecondaryAction={() => setActiveTab('couple-mode')}
+        />
+      ) : filteredMemories.length === 0 ? (
         <EmptyState
           icon={<Brain className="w-6 h-6" />}
           title="No memories in this filter"
-          description="Add custom memories or let LoveMate learn natural preferences as you chat."
-          actionLabel="Add first memory"
+          description="Try another category or clear the search, or add a memory that belongs here."
+          actionLabel="Add memory"
           onAction={() => setShowAddModal(true)}
         />
       ) : (

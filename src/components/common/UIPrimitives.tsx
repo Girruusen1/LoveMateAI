@@ -153,6 +153,9 @@ interface EmptyStateProps {
   description: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** Optional quieter second action, e.g. "Invite your partner". */
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
   className?: string;
 }
 
@@ -162,6 +165,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   description,
   actionLabel,
   onAction,
+  secondaryActionLabel,
+  onSecondaryAction,
   className = '',
 }) => {
   return (
@@ -175,11 +180,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       <p className="text-xs sm:text-sm text-zinc-500 mt-1 max-w-sm mx-auto leading-relaxed">
         {description}
       </p>
-      {actionLabel && onAction && (
-        <div className="mt-5">
-          <Button variant="primary" size="sm" onClick={onAction} icon={<ArrowRight className="w-3.5 h-3.5" />} iconPosition="right">
-            {actionLabel}
-          </Button>
+      {((actionLabel && onAction) || (secondaryActionLabel && onSecondaryAction)) && (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {actionLabel && onAction && (
+            <Button variant="primary" size="sm" onClick={onAction} icon={<ArrowRight className="w-3.5 h-3.5" />} iconPosition="right">
+              {actionLabel}
+            </Button>
+          )}
+          {secondaryActionLabel && onSecondaryAction && (
+            <Button variant="ghost" size="sm" onClick={onSecondaryAction}>
+              {secondaryActionLabel}
+            </Button>
+          )}
         </div>
       )}
     </div>
