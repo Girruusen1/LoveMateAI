@@ -1,6 +1,7 @@
 import React from 'react';
 import { Lock, ShieldAlert, Wrench } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useT } from '../../i18n';
 import { EntitlementFeature, FeatureFlags } from '../../types';
 import { Button, PageContainer } from './UIPrimitives';
 
@@ -44,14 +45,18 @@ const TIER_FOR: Record<EntitlementFeature, string> = {
 /** Wraps a page and shows an explanatory card instead when the user may not use it. */
 export const FeatureGate: React.FC<FeatureGateProps> = ({ entitlement, flag, adminOnly, requireAuth, featureName, children }) => {
   const { user, isAdmin, canUseFeature, featureFlags, setProModalOpen, openAuthModal, setActiveTab } = useApp();
+  const { t, lang } = useT();
+  // Feature names are menu labels, so they translate through MENU_LABELS when a translation exists.
+  const feature = t(featureName);
+  const featureLower = lang === 'english' ? feature.toLowerCase() : feature;
 
   if (adminOnly && !isAdmin) {
     return (
       <Notice
         icon={<ShieldAlert />}
-        title="Admins only"
-        body="The admin console is restricted to LoveMate team accounts."
-        action={<Button variant="secondary" onClick={() => setActiveTab('home')}>Back to home</Button>}
+        title={t('Admins only')}
+        body={t('The admin console is restricted to LoveMate team accounts.')}
+        action={<Button variant="secondary" onClick={() => setActiveTab('home')}>{t('Back to home')}</Button>}
       />
     );
   }
@@ -60,9 +65,9 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({ entitlement, flag, adm
     return (
       <Notice
         icon={<Wrench />}
-        title={`${featureName} is temporarily unavailable`}
-        body="This feature has been switched off by the team for now. Please check back later."
-        action={<Button variant="secondary" onClick={() => setActiveTab('home')}>Back to home</Button>}
+        title={t('{feature} is temporarily unavailable', { feature })}
+        body={t('This feature has been switched off by the team for now. Please check back later.')}
+        action={<Button variant="secondary" onClick={() => setActiveTab('home')}>{t('Back to home')}</Button>}
       />
     );
   }
@@ -71,12 +76,12 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({ entitlement, flag, adm
     return (
       <Notice
         icon={<Lock />}
-        title={`Sign in to use ${featureName}`}
-        body="Your saved items, memories and plans are tied to your account."
+        title={t('Sign in to use {feature}', { feature })}
+        body={t('Your saved items, memories and plans are tied to your account.')}
         action={
           <>
-            <Button variant="secondary" onClick={() => openAuthModal('login')}>Sign in</Button>
-            <Button onClick={() => openAuthModal('signup')}>Create account</Button>
+            <Button variant="secondary" onClick={() => openAuthModal('login')}>{t('Sign in')}</Button>
+            <Button onClick={() => openAuthModal('signup')}>{t('Create account')}</Button>
           </>
         }
       />
@@ -87,12 +92,12 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({ entitlement, flag, adm
     return (
       <Notice
         icon={<Lock />}
-        title={`${featureName} is a ${TIER_FOR[entitlement]} feature`}
-        body={`Upgrade to the ${TIER_FOR[entitlement]} plan to unlock ${featureName.toLowerCase()} and everything below it.`}
+        title={t('{feature} is a {tier} feature', { feature, tier: TIER_FOR[entitlement] })}
+        body={t('Upgrade to the {tier} plan to unlock {feature} and everything below it.', { tier: TIER_FOR[entitlement], feature: featureLower })}
         action={
           <>
-            <Button variant="secondary" onClick={() => setActiveTab('home')}>Not now</Button>
-            <Button onClick={() => setProModalOpen(true)}>See plans</Button>
+            <Button variant="secondary" onClick={() => setActiveTab('home')}>{t('Not now')}</Button>
+            <Button onClick={() => setProModalOpen(true)}>{t('See plans')}</Button>
           </>
         }
       />

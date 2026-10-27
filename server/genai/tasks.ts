@@ -44,7 +44,39 @@ const oneOf = <const T extends readonly [string, ...string[]]>(values: T, fallba
 
 const level = oneOf(['Low', 'Medium', 'High'], 'Medium');
 
-export const TASKS = {
+/* ---------- language ---------- */
+/**
+ * Tasks whose prompt already states the answer language themselves. Every other task gets a
+ * "Reply in <language>" line appended (see `withLanguage` below), driven by `input.language`,
+ * which the browser client fills in from the user's preferredLanguage when the caller omits it.
+ */
+const LANGUAGE_AWARE_TASKS = new Set<string>(['confession', 'copilot']);
+
+/** Human-readable values follow the user's language; keys and enum-like values stay English so the Zod schemas still match. */
+export function languageInstruction(language: unknown): string {
+  return `Reply in ${languageLabel(language)}: write every human-readable value (sentences, suggestions, explanations, titles, scripts) in that language. Keep all JSON keys exactly as specified, in English. Values described as a fixed set of options (labels, levels, statuses, recommendation codes, tab or type names) must stay exactly as listed in English. Fields explicitly described as Hinglish stay Hinglish. Keep people's names, emoji and proper nouns as they are.`;
+}
+
+function withLanguage<T extends Record<string, TaskDef>>(tasks: T): T {
+  const out: Record<string, TaskDef> = {};
+  for (const [name, def] of Object.entries(tasks)) {
+    if (LANGUAGE_AWARE_TASKS.has(name)) {
+      out[name] = def;
+      continue;
+    }
+    out[name] = {
+      ...def,
+      build: (input) => {
+        const content = def.build(input);
+        const note = languageInstruction(input.language);
+        return typeof content === 'string' ? `${content}\n\n${note}` : [...content, { type: 'text', text: note }];
+      },
+    };
+  }
+  return out as T;
+}
+
+const RAW_TASKS = {
   decode: {
     effort: 'low',
     schema: z.object({
@@ -60,7 +92,7 @@ export const TASKS = {
         .describe('exactly three replies: one Casual, one Playful, one Flirty'),
     }),
     build: (i) =>
-      `Decode this message someone received and suggest replies. Give English replies in "text" and Hinglish versions in "hinglishText".\n\n${quote('Message they received', str(i.message))}\n\n${quote('Context from before the message', str(i.context))}`,
+      `Decode this message someone received and suggest replies. Give replies in the requested language in "text" and Hinglish versions in "hinglishText".\n\n${quote('Message they received', str(i.message))}\n\n${quote('Context from before the message', str(i.context))}`,
   },
 
   screenshot: {
@@ -105,7 +137,7 @@ export const TASKS = {
     schema: z.object({
       variations: z.array(z.object({ text: z.string(), hinglish: z.string(), explanation: z.string() })).describe('three rewritten versions'),
     }),
-    build: (i) => `Rewrite the user's draft message in a ${str(i.style, 60) || 'better'} style. Keep their meaning. Give three distinct versions with English in "text" and a Hinglish version in "hinglish".\n\n${quote('Their draft', str(i.originalText))}`,
+    build: (i) => `Rewrite the user's draft message in a ${str(i.style, 60) || 'better'} style. Keep their meaning. Give three distinct versions with the requested language in "text" and a Hinglish version in "hinglish".\n\n${quote('Their draft', str(i.originalText))}`,
   },
 
   whatIf: {
@@ -255,7 +287,7 @@ export const TASKS = {
     }),
     build: (i) => {
       const u = (i.userContext ?? {}) as Record<string, unknown>;
-      return `You are the in-app assistant. Answer the user's request and, where useful, point them to screens in the app.\nUser: ${str(u.name, 60) || 'the user'}; partner: ${str(u.partnerName, 60) || 'not specified'}; preferred language: ${languageLabel(u.preferredLanguage)}.\n\n${list(i.memories, 12).length ? `What you remember about them:\n- ${list(i.memories, 12).join('\n- ')}\n\n` : ''}${quote('Their request', str(i.query))}`;
+      return `You are the in-app assistant. Answer the user's request and, where useful, point them to screens in the app.\nUser: ${str(u.name, 60) || 'the user'}; partner: ${str(u.partnerName, 60) || 'not specified'}.\nReply in ${languageLabel(i.language ?? u.preferredLanguage)}. Keep the JSON keys and "tab" values exactly as specified; button labels may be in that language.\n\n${list(i.memories, 12).length ? `What you remember about them:\n- ${list(i.memories, 12).join('\n- ')}\n\n` : ''}${quote('Their request', str(i.query))}`;
     },
   },
 
@@ -314,6 +346,8 @@ export const TASKS = {
     },
   },
 } satisfies Record<string, TaskDef>;
+
+export const TASKS = withLanguage(RAW_TASKS);
 
 export type TaskName = keyof typeof TASKS;
 export const isTaskName = (n: string): n is TaskName => Object.prototype.hasOwnProperty.call(TASKS, n);

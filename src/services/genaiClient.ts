@@ -60,6 +60,29 @@ async function toError(res: Response): Promise<GenAIClientError> {
   }
 }
 
+const USER_STORAGE_KEY = 'lovemate_user_v2';
+const KNOWN_LANGUAGES = new Set(['english', 'hinglish', 'hindi', 'roman_hindi']);
+
+/** The language the signed-in user picked for AI answers (from the stored user record), if any. */
+export function storedPreferredLanguage(): string | null {
+  try {
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { preferredLanguage?: unknown } | null;
+    const lang = parsed?.preferredLanguage;
+    return typeof lang === 'string' && KNOWN_LANGUAGES.has(lang) ? lang : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Add `language` from the stored preference when the caller did not set one. */
+function withLanguage<T extends { language?: unknown }>(input: T): T {
+  if (typeof input.language === 'string' && input.language) return input;
+  const lang = storedPreferredLanguage();
+  return lang ? { ...input, language: lang } : input;
+}
+
 /** Run a structured task on the server and return its schema-validated result. */
 export async function runTask<T>(name: string, input: Record<string, unknown>): Promise<T> {
   let res: Response;
@@ -67,7 +90,7 @@ export async function runTask<T>(name: string, input: Record<string, unknown>): 
     res = await fetch(`/api/ai/task/${name}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(input),
+      body: JSON.stringify(withLanguage(input)),
     });
   } catch {
     throw report(new GenAIClientError('network', 'Could not reach the AI server. Check your connection.'));
@@ -94,7 +117,7 @@ export async function streamChat(req: ChatRequest, onDelta?: (delta: string) => 
     res = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-      body: JSON.stringify(req),
+      body: JSON.stringify(withLanguage(req)),
       signal,
     });
   } catch {

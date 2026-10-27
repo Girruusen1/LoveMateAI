@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { WOULD_YOU_RATHER_CARDS } from '../../data/seedData';
+import { useT } from '../../i18n';
 import { copyText } from '../../utils/clipboard';
 import { LandingPage } from './LandingPage';
 
@@ -117,8 +118,6 @@ function nextOccurrence(dateStr: string, recurring: boolean): Date | null {
   }
   return next;
 }
-const daysLabel = (n: number) => (n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : `In ${n} days`);
-
 const card = 'bg-white border border-[#EBE5DC] shadow-2xs';
 const smallBtn = 'font-semibold text-rose-600 hover:text-rose-700 inline-flex items-center gap-1 transition-colors';
 
@@ -135,6 +134,8 @@ export const PersonalizedDashboard: React.FC = () => {
     showToast,
     setPendingCopilotPrompt,
   } = useApp();
+  const { t } = useT();
+  const daysLabel = (n: number) => (n === 0 ? t('Today') : n === 1 ? t('Tomorrow') : t('In {n} days', { n }));
 
   const [mode, setMode] = useState<'couple' | 'private'>(() => {
     try {
@@ -166,7 +167,7 @@ export const PersonalizedDashboard: React.FC = () => {
 
   const update = (patch: Partial<DailyState>) => setDaily((d) => ({ ...d, ...patch }));
   const partner = user?.partnerName?.trim() || '';
-  const partnerLabel = partner || 'your partner';
+  const partnerLabel = partner || t('Partner');
   const linked = !!partner && (coupleRoom?.status === 'connected' || !!user?.partnerConnected);
   const couple = mode === 'couple';
 
@@ -188,9 +189,9 @@ export const PersonalizedDashboard: React.FC = () => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return t('Good morning');
+    if (hour < 17) return t('Good afternoon');
+    return t('Good evening');
   };
 
   /** Real delivery: hand the text to the phone's share sheet (WhatsApp etc.) or copy it. */
@@ -203,7 +204,7 @@ export const PersonalizedDashboard: React.FC = () => {
         /* cancelled or unsupported: fall back to copy */
       }
     }
-    showToast((await copyText(text)) ? okMessage : "Couldn't copy. Please copy it manually.", 'info');
+    showToast((await copyText(text)) ? okMessage : t("Couldn't copy. Please copy it manually."), 'info');
   };
 
   const askAI = (query: string) => {
@@ -212,13 +213,13 @@ export const PersonalizedDashboard: React.FC = () => {
   };
 
   const sealMine = () => {
-    if (!daily.mine.trim()) return showToast('Write your answer before sealing it.', 'info');
+    if (!daily.mine.trim()) return showToast(t('Write your answer before sealing it.'), 'info');
     update({ mineSealed: true, sealedPointsGiven: true });
     if (!daily.sealedPointsGiven) addPoints(15, 'Answered the daily question');
   };
 
   const savePrivate = () => {
-    if (!daily.privateNote.trim() || !user) return showToast('Write your reflection first.', 'info');
+    if (!daily.privateNote.trim() || !user) return showToast(t('Write your reflection first.'), 'info');
     addUserMemory({
       userId: user.id,
       category: 'relationship',
@@ -237,7 +238,7 @@ export const PersonalizedDashboard: React.FC = () => {
 
   const toggleSpeak = () => {
     const synth = window.speechSynthesis;
-    if (!synth) return showToast('Audio playback is not supported in this browser.', 'info');
+    if (!synth) return showToast(t('Audio playback is not supported in this browser.'), 'info');
     if (speaking) {
       synth.cancel();
       setSpeaking(false);
@@ -269,51 +270,51 @@ export const PersonalizedDashboard: React.FC = () => {
               linked ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span>Connected with {partner}</span>
+                  <span>{t('Connected with {partner}', { partner })}</span>
                 </>
               ) : partner ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-zinc-300" />
-                  <span>{partner} isn't linked yet.</span>
+                  <span>{t("{partner} isn't linked yet.", { partner })}</span>
                   <button onClick={() => setActiveTab('couple-mode')} className={smallBtn}>
-                    Invite
+                    {t('Invite')}
                   </button>
                 </>
               ) : (
                 <>
                   <span className="w-2 h-2 rounded-full bg-zinc-300" />
-                  <span>No partner added yet.</span>
+                  <span>{t('No partner added yet.')}</span>
                   <button onClick={() => setActiveTab('profile')} className={smallBtn}>
-                    Add partner
+                    {t('Add partner')}
                   </button>
                 </>
               )
             ) : (
               <>
                 <Lock className="w-3.5 h-3.5 text-zinc-400" />
-                <span>Private space. Only you can see what you write here.</span>
+                <span>{t('Private space. Only you can see what you write here.')}</span>
               </>
             )}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-semibold" title={couple ? 'Days you both checked in' : 'Days you opened LoveMate in a row'}>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-800 text-xs font-semibold" title={couple ? t('Days you both checked in') : t('Days you opened LoveMate in a row')}>
             <Flame className="w-3.5 h-3.5 text-amber-500" />
-            <span>{couple ? coupleStreak : user.streak}-day streak</span>
+            <span>{t('{n}-day streak', { n: couple ? coupleStreak : user.streak })}</span>
           </div>
 
           {couple && partner && (
             <button
-              onClick={() => shareText(`Thinking of you, ${partner} 💓`, 'Heartbeat copied. Paste it in your chat.')}
+              onClick={() => shareText(t('Thinking of you, {partner} 💓', { partner }), t('Heartbeat copied. Paste it in your chat.'))}
               className="px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-white hover:bg-rose-50 text-zinc-700 hover:text-rose-700 border border-zinc-200/90 transition-colors"
             >
               <Heart className="w-3.5 h-3.5 text-rose-500" />
-              Send a heartbeat
+              {t('Send a heartbeat')}
             </button>
           )}
 
-          <div className="flex items-center bg-[#F3EFEA] p-1 rounded-xl border border-[#E5DFD5]" role="tablist" aria-label="Space">
+          <div className="flex items-center bg-[#F3EFEA] p-1 rounded-xl border border-[#E5DFD5]" role="tablist" aria-label={t('Space')}>
             {(['couple', 'private'] as const).map((m) => (
               <button
                 key={m}
@@ -322,7 +323,7 @@ export const PersonalizedDashboard: React.FC = () => {
                 onClick={() => setMode(m)}
                 className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${mode === m ? 'bg-white text-rose-600 shadow-2xs' : 'text-zinc-500 hover:text-zinc-800'}`}
               >
-                {m === 'couple' ? 'Our room' : 'Private space'}
+                {m === 'couple' ? t('Our room') : t('Private space')}
               </button>
             ))}
           </div>
@@ -337,9 +338,9 @@ export const PersonalizedDashboard: React.FC = () => {
               {couple ? <Lock className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-serif-romance font-bold text-zinc-900">{couple ? "Today's sealed question" : "Today's private reflection"}</h2>
+              <h2 className="text-base sm:text-lg font-serif-romance font-bold text-zinc-900">{couple ? t("Today's sealed question") : t("Today's private reflection")}</h2>
               <p className="text-xs text-zinc-500">
-                {couple ? 'Answer separately. Neither answer is shown until you both have sealed yours.' : 'Saved to your private memories. Never shared.'}
+                {couple ? t('Answer separately. Neither answer is shown until you both have sealed yours.') : t('Saved to your private memories. Never shared.')}
               </p>
             </div>
           </div>
@@ -363,16 +364,16 @@ export const PersonalizedDashboard: React.FC = () => {
               value={daily.privateNote}
               disabled={daily.privateSaved}
               onChange={(e) => update({ privateNote: e.target.value })}
-              placeholder="Write freely. This stays with you."
+              placeholder={t('Write freely. This stays with you.')}
               className="w-full p-3 rounded-xl bg-white border border-zinc-200 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:border-rose-400 resize-none disabled:bg-zinc-50"
             />
             {daily.privateSaved ? (
               <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Saved to your private memories
+                <CheckCircle2 className="w-3.5 h-3.5" /> {t('Saved to your private memories')}
               </p>
             ) : (
               <button onClick={savePrivate} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold">
-                Save privately
+                {t('Save privately')}
               </button>
             )}
           </div>
@@ -394,7 +395,7 @@ export const PersonalizedDashboard: React.FC = () => {
               }
               className={`${smallBtn} text-xs`}
             >
-              Reflect on this with LoveMate <ArrowRight className="w-3 h-3" />
+              {t('Reflect on this with LoveMate')} <ArrowRight className="w-3 h-3" />
             </button>
           </div>
         ) : (
@@ -402,19 +403,19 @@ export const PersonalizedDashboard: React.FC = () => {
             {/* You */}
             <div className="p-4 rounded-2xl border border-zinc-200/90 bg-zinc-50/50 space-y-3">
               <div className="flex items-center justify-between text-xs font-semibold text-zinc-900">
-                <span>Your answer</span>
+                <span>{t('Your answer')}</span>
                 {daily.mineSealed && (
                   <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 inline-flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> Sealed
+                    <CheckCircle2 className="w-3 h-3" /> {t('Sealed')}
                   </span>
                 )}
               </div>
               {daily.mineSealed ? (
                 <div className="p-5 rounded-xl bg-white border border-dashed border-zinc-300 text-center">
                   <Lock className="w-5 h-5 text-zinc-400 mx-auto" />
-                  <p className="text-xs text-zinc-500 mt-1.5">Hidden until you both reveal.</p>
+                  <p className="text-xs text-zinc-500 mt-1.5">{t('Hidden until you both reveal.')}</p>
                   <button onClick={() => update({ mineSealed: false })} disabled={daily.partnerSealed} className="text-[11px] text-zinc-400 hover:text-zinc-700 underline mt-2 disabled:hidden">
-                    Edit my answer
+                    {t('Edit my answer')}
                   </button>
                 </div>
               ) : (
@@ -423,11 +424,11 @@ export const PersonalizedDashboard: React.FC = () => {
                     rows={3}
                     value={daily.mine}
                     onChange={(e) => update({ mine: e.target.value })}
-                    placeholder="Write your honest answer..."
+                    placeholder={t('Write your honest answer...')}
                     className="w-full p-3 rounded-xl bg-white border border-zinc-200 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:border-rose-400 resize-none"
                   />
                   <button onClick={sealMine} className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5" /> Seal my answer
+                    <Lock className="w-3.5 h-3.5" /> {t('Seal my answer')}
                   </button>
                 </>
               )}
@@ -438,11 +439,11 @@ export const PersonalizedDashboard: React.FC = () => {
               <div className="flex items-center justify-between text-xs font-semibold text-zinc-900">
                 <span className="flex items-center gap-1.5">
                   <Heart className="w-3.5 h-3.5 text-rose-500" />
-                  {partner ? `${partner}'s answer` : "Partner's answer"}
+                  {partner ? t("{partner}'s answer", { partner }) : t("Partner's answer")}
                 </span>
                 {daily.partnerSealed && (
                   <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 inline-flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> Sealed
+                    <CheckCircle2 className="w-3 h-3" /> {t('Sealed')}
                   </span>
                 )}
               </div>
@@ -450,39 +451,42 @@ export const PersonalizedDashboard: React.FC = () => {
               {!partner ? (
                 <div className="p-5 rounded-xl bg-white border border-dashed border-zinc-300 text-center space-y-2">
                   <UserPlus className="w-5 h-5 text-zinc-400 mx-auto" />
-                  <p className="text-xs text-zinc-500">Add your partner's name to answer together.</p>
+                  <p className="text-xs text-zinc-500">{t("Add your partner's name to answer together.")}</p>
                   <button onClick={() => setActiveTab('profile')} className={`${smallBtn} text-xs`}>
-                    Add partner
+                    {t('Add partner')}
                   </button>
                 </div>
               ) : daily.partnerSealed ? (
                 <div className="p-5 rounded-xl bg-white border border-dashed border-zinc-300 text-center">
                   <Lock className="w-5 h-5 text-zinc-400 mx-auto" />
-                  <p className="text-xs text-zinc-500 mt-1.5">{partner}'s answer is sealed.</p>
+                  <p className="text-xs text-zinc-500 mt-1.5">{t("{partner}'s answer is sealed.", { partner })}</p>
                 </div>
               ) : !daily.mineSealed ? (
                 <div className="p-5 rounded-xl bg-white border border-dashed border-zinc-300 text-center space-y-2">
                   <Lock className="w-5 h-5 text-zinc-400 mx-auto" />
-                  <p className="text-xs text-zinc-500">Seal your answer first, then pass the phone to {partner} or send them the question.</p>
-                  <button onClick={() => shareText(`Today's LoveMate question for us: "${question[lang]}" Answer it before you peek at mine 🔒`, 'Question copied. Send it to them.')} className={`${smallBtn} text-xs`}>
-                    <Send className="w-3 h-3" /> Send the question
+                  <p className="text-xs text-zinc-500">{t('Seal your answer first, then pass the phone to {partner} or send them the question.', { partner })}</p>
+                  <button
+                    onClick={() => shareText(t("Today's LoveMate question for us: \"{q}\" Answer it before you peek at mine 🔒", { q: question[lang] }), t('Question copied. Send it to them.'))}
+                    className={`${smallBtn} text-xs`}
+                  >
+                    <Send className="w-3 h-3" /> {t('Send the question')}
                   </button>
                 </div>
               ) : (
                 <>
-                  <p className="text-[11px] text-zinc-500">Pass the phone to {partner}. Your answer is hidden.</p>
+                  <p className="text-[11px] text-zinc-500">{t('Pass the phone to {partner}. Your answer is hidden.', { partner })}</p>
                   <textarea
                     rows={3}
                     value={daily.partner}
                     onChange={(e) => update({ partner: e.target.value })}
-                    placeholder={`${partner}, write your answer...`}
+                    placeholder={t('{partner}, write your answer...', { partner })}
                     className="w-full p-3 rounded-xl bg-white border border-zinc-200 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none focus:border-rose-400 resize-none"
                   />
                   <button
-                    onClick={() => (daily.partner.trim() ? update({ partnerSealed: true }) : showToast(`${partner} needs to write an answer first.`, 'info'))}
+                    onClick={() => (daily.partner.trim() ? update({ partnerSealed: true }) : showToast(t('{partner} needs to write an answer first.', { partner }), 'info'))}
                     className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
                   >
-                    <Lock className="w-3.5 h-3.5" /> Seal {partner}'s answer
+                    <Lock className="w-3.5 h-3.5" /> {t("Seal {partner}'s answer", { partner })}
                   </button>
                 </>
               )}
@@ -490,7 +494,7 @@ export const PersonalizedDashboard: React.FC = () => {
 
             {daily.mineSealed && daily.partnerSealed && (
               <button onClick={() => update({ revealed: true })} className="md:col-span-2 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
-                <Unlock className="w-4 h-4" /> Reveal both answers
+                <Unlock className="w-4 h-4" /> {t('Reveal both answers')}
               </button>
             )}
           </div>
@@ -500,26 +504,26 @@ export const PersonalizedDashboard: React.FC = () => {
       {/* 3. Daily rituals */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-serif-romance font-bold text-zinc-900 tracking-tight">Daily rituals</h2>
-          <span className="text-xs text-zinc-400">New every day</span>
+          <h2 className="text-base sm:text-lg font-serif-romance font-bold text-zinc-900 tracking-tight">{t('Daily rituals')}</h2>
+          <span className="text-xs text-zinc-400">{t('New every day')}</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Tip */}
           <div className={`${card} p-5 rounded-3xl flex flex-col justify-between gap-4`}>
             <div className="space-y-2">
-              <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">Today's tip</span>
+              <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">{t("Today's tip")}</span>
               <h3 className="font-serif-romance font-semibold text-zinc-900 text-sm leading-snug pt-1">"{tip.tip[lang]}"</h3>
               <p className="text-xs text-zinc-500 leading-relaxed">{tip.why}</p>
             </div>
             <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs">
               <button onClick={toggleSpeak} className="font-semibold text-zinc-700 hover:text-rose-600 flex items-center gap-1.5" aria-pressed={speaking}>
                 {speaking ? <Square className="w-3.5 h-3.5 text-rose-600" /> : <Volume2 className="w-3.5 h-3.5 text-zinc-400" />}
-                {speaking ? 'Stop' : 'Listen'}
+                {speaking ? t('Stop') : t('Listen')}
               </button>
               {daily.tipRead ? (
                 <span className="text-zinc-400 font-semibold inline-flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5" /> Read today
+                  <Check className="w-3.5 h-3.5" /> {t('Read today')}
                 </span>
               ) : (
                 <button
@@ -529,7 +533,7 @@ export const PersonalizedDashboard: React.FC = () => {
                   }}
                   className={smallBtn}
                 >
-                  Mark as read (+10)
+                  {t('Mark as read (+10)')}
                 </button>
               )}
             </div>
@@ -538,7 +542,7 @@ export const PersonalizedDashboard: React.FC = () => {
           {/* Would you rather */}
           <div className={`${card} p-5 rounded-3xl flex flex-col justify-between gap-4`}>
             <div className="space-y-2">
-              <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">Would you rather</span>
+              <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">{t('Would you rather')}</span>
               <h3 className="font-serif-romance font-semibold text-zinc-900 text-sm leading-snug pt-1">{game.question}</h3>
               <div className="space-y-1.5 pt-1">
                 {(['a', 'b'] as const).map((opt) => {
@@ -553,8 +557,8 @@ export const PersonalizedDashboard: React.FC = () => {
                     >
                       <span>{text}</span>
                       <span className="flex gap-1 shrink-0 text-[10px] font-semibold">
-                        {mine && <span className="px-1.5 rounded bg-rose-600 text-white">You</span>}
-                        {theirs && <span className="px-1.5 rounded bg-zinc-900 text-white">{partner || 'Partner'}</span>}
+                        {mine && <span className="px-1.5 rounded bg-rose-600 text-white">{t('You')}</span>}
+                        {theirs && <span className="px-1.5 rounded bg-zinc-900 text-white">{partner || t('Partner')}</span>}
                       </span>
                     </button>
                   );
@@ -563,26 +567,26 @@ export const PersonalizedDashboard: React.FC = () => {
             </div>
             <div className="pt-3 border-t border-zinc-100 text-xs">
               {!daily.gameMine ? (
-                <span className="text-zinc-500">Pick one, then compare.</span>
+                <span className="text-zinc-500">{t('Pick one, then compare.')}</span>
               ) : couple && partner && !daily.gamePartner ? (
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-zinc-500">{partner}'s pick?</span>
+                  <span className="text-zinc-500">{t("{partner}'s pick?", { partner })}</span>
                   <span className="flex gap-1.5">
                     <button onClick={() => update({ gamePartner: 'a' })} className="px-2 py-0.5 rounded-lg border border-zinc-200 hover:border-rose-300 font-semibold">
-                      First
+                      {t('First')}
                     </button>
                     <button onClick={() => update({ gamePartner: 'b' })} className="px-2 py-0.5 rounded-lg border border-zinc-200 hover:border-rose-300 font-semibold">
-                      Second
+                      {t('Second')}
                     </button>
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center justify-between">
                   <span className="text-zinc-600 font-medium">
-                    {!daily.gamePartner ? 'Saved for today.' : daily.gamePartner === daily.gameMine ? 'You matched!' : 'Different picks. Ask each other why.'}
+                    {!daily.gamePartner ? t('Saved for today.') : daily.gamePartner === daily.gameMine ? t('You matched!') : t('Different picks. Ask each other why.')}
                   </span>
                   <button onClick={() => setActiveTab('games')} className={smallBtn}>
-                    More games <ChevronRight className="w-3 h-3" />
+                    {t('More games')} <ChevronRight className="w-3 h-3" />
                   </button>
                 </div>
               )}
@@ -592,8 +596,8 @@ export const PersonalizedDashboard: React.FC = () => {
           {/* Mood */}
           <div className={`${card} p-5 rounded-3xl flex flex-col justify-between gap-4`}>
             <div className="space-y-2">
-              <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">Mood check-in</span>
-              <h3 className="font-serif-romance font-semibold text-zinc-900 text-sm pt-1">How are you feeling today?</h3>
+              <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">{t('Mood check-in')}</span>
+              <h3 className="font-serif-romance font-semibold text-zinc-900 text-sm pt-1">{t('How are you feeling today?')}</h3>
               <div className="grid grid-cols-2 gap-1.5 pt-1">
                 {MOODS.map((m) => (
                   <button
@@ -605,19 +609,19 @@ export const PersonalizedDashboard: React.FC = () => {
                     }`}
                   >
                     {m.icon}
-                    {m.label}
+                    {t(m.label)}
                   </button>
                 ))}
               </div>
             </div>
             <div className="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs">
-              <span className="text-zinc-500">{daily.mood ? 'Saved for today.' : 'Tap how you feel.'}</span>
+              <span className="text-zinc-500">{daily.mood ? t('Saved for today.') : t('Tap how you feel.')}</span>
               {couple && partner && daily.mood && (
                 <button
-                  onClick={() => shareText(`Today I'm feeling: ${MOODS.find((m) => m.id === daily.mood)?.label.toLowerCase()} 💛`, `Mood copied. Send it to ${partner}.`)}
+                  onClick={() => shareText(t("Today I'm feeling: {mood} 💛", { mood: t(MOODS.find((m) => m.id === daily.mood)?.label ?? '').toLowerCase() }), t('Mood copied. Send it to {partner}.', { partner }))}
                   className={smallBtn}
                 >
-                  Tell {partner} <Send className="w-3 h-3" />
+                  {t('Tell {partner}', { partner })} <Send className="w-3 h-3" />
                 </button>
               )}
             </div>
@@ -632,8 +636,8 @@ export const PersonalizedDashboard: React.FC = () => {
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-sm sm:text-base font-serif-romance font-bold text-zinc-900">Ask LoveMate</h2>
-            <p className="text-xs text-zinc-500">Texting advice, date ideas, or help with a hard conversation</p>
+            <h2 className="text-sm sm:text-base font-serif-romance font-bold text-zinc-900">{t('Ask LoveMate')}</h2>
+            <p className="text-xs text-zinc-500">{t('Texting advice, date ideas, or help with a hard conversation')}</p>
           </div>
         </div>
         <form
@@ -650,15 +654,15 @@ export const PersonalizedDashboard: React.FC = () => {
             type="text"
             value={aiQuery}
             onChange={(e) => setAiQuery(e.target.value)}
-            placeholder='Ask anything, like "How do I reply when they go quiet?"'
-            aria-label="Ask LoveMate"
+            placeholder={t('Ask anything, like "How do I reply when they go quiet?"')}
+            aria-label={t('Ask LoveMate')}
             className="flex-1 min-w-0 bg-transparent text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none px-2"
           />
-          <button type="button" onClick={() => setActiveTab('voice-chat')} aria-label="Ask by voice" className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-lg hidden sm:block">
+          <button type="button" onClick={() => setActiveTab('voice-chat')} aria-label={t('Ask by voice')} className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-lg hidden sm:block">
             <Mic className="w-4 h-4" />
           </button>
           <button type="submit" className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1 shrink-0">
-            Ask <ArrowRight className="w-3.5 h-3.5" />
+            {t('Ask')} <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </form>
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
@@ -669,7 +673,7 @@ export const PersonalizedDashboard: React.FC = () => {
             { label: '3 deep questions', query: 'Give us 3 deep questions to ask each other tonight' },
           ].map((p) => (
             <button key={p.label} onClick={() => askAI(p.query)} className="px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-zinc-600 hover:text-rose-700 border border-zinc-200 text-xs font-medium transition-colors">
-              {p.label}
+              {t(p.label)}
             </button>
           ))}
         </div>
@@ -678,9 +682,9 @@ export const PersonalizedDashboard: React.FC = () => {
       {/* 5. Coming up */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-serif-romance font-bold text-zinc-900 tracking-tight">Coming up</h2>
+          <h2 className="text-base sm:text-lg font-serif-romance font-bold text-zinc-900 tracking-tight">{t('Coming up')}</h2>
           <button onClick={() => setActiveTab('couple-calendar')} className={`${smallBtn} text-xs`}>
-            View calendar <ChevronRight className="w-3 h-3" />
+            {t('View calendar')} <ChevronRight className="w-3 h-3" />
           </button>
         </div>
 
@@ -702,18 +706,18 @@ export const PersonalizedDashboard: React.FC = () => {
                 </div>
                 <div className="pt-3 border-t border-zinc-100 flex items-center justify-between gap-2">
                   <button onClick={() => setActiveTab('important-dates')} className="text-xs text-zinc-500 hover:text-zinc-800">
-                    All dates
+                    {t('All dates')}
                   </button>
                   <button
-                    onClick={() => askAI(`Help me plan something special for "${nextDate.d.title}" ${daysLabel(nextDate.days).toLowerCase()}.${nextDate.d.notes ? ` Notes: ${nextDate.d.notes}` : ''}`)}
+                    onClick={() => askAI(`Help me plan something special for "${nextDate.d.title}" ${nextDate.days === 0 ? 'today' : nextDate.days === 1 ? 'tomorrow' : `in ${nextDate.days} days`}.${nextDate.d.notes ? ` Notes: ${nextDate.d.notes}` : ''}`)}
                     className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1"
                   >
-                    Plan it <ArrowRight className="w-3 h-3" />
+                    {t('Plan it')} <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
               </>
             ) : (
-              <EmptyMini icon={<CalendarHeart className="w-5 h-5" />} title="No dates saved yet" body="Add birthdays and anniversaries so you never miss one." action="Add a date" onAction={() => setActiveTab('important-dates')} />
+              <EmptyMini icon={<CalendarHeart className="w-5 h-5" />} title={t('No dates saved yet')} body={t('Add birthdays and anniversaries so you never miss one.')} action={t('Add a date')} onAction={() => setActiveTab('important-dates')} />
             )}
           </div>
 
@@ -727,7 +731,7 @@ export const PersonalizedDashboard: React.FC = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-zinc-500">
-                      Plan in progress
+                      {t('Plan in progress')}
                       {activePlan.scheduledAt && !Number.isNaN(Date.parse(activePlan.scheduledAt)) && ` · ${new Date(activePlan.scheduledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}
                     </p>
                     <h3 className="text-sm sm:text-base font-serif-romance font-bold text-zinc-900 leading-snug">{activePlan.title}</h3>
@@ -736,12 +740,12 @@ export const PersonalizedDashboard: React.FC = () => {
                 </div>
                 <div className="pt-3 border-t border-zinc-100 flex items-center justify-end">
                   <button onClick={() => setActiveTab('agent-activity')} className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1">
-                    Continue <ArrowRight className="w-3 h-3" />
+                    {t('Continue')} <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
               </>
             ) : (
-              <EmptyMini icon={<Sparkles className="w-5 h-5" />} title="No plans in progress" body="Tell LoveMate what you want to make happen and it will build a plan." action="Start a plan" onAction={() => setActiveTab('copilot')} />
+              <EmptyMini icon={<Sparkles className="w-5 h-5" />} title={t('No plans in progress')} body={t('Tell LoveMate what you want to make happen and it will build a plan.')} action={t('Start a plan')} onAction={() => setActiveTab('copilot')} />
             )}
           </div>
         </div>
