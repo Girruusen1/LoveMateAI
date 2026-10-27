@@ -21,6 +21,9 @@ export const ReferralCenterView: React.FC = () => {
     coupleRoom,
     showToast,
     triggerConfetti,
+    redeemPointsForPlus,
+    pointsPerPlusDay,
+    plan,
   } = useApp();
 
   const [copiedCode, setCopiedCode] = useState(false);
@@ -138,6 +141,32 @@ export const ReferralCenterView: React.FC = () => {
         title="Referrals"
         subtitle="Invite friends with your link. When a friend signs up, you both get 7 days of LoveMate Plus free (up to 10 friends), plus 100 Love Points."
       />
+
+      {/* Spend Love Points */}
+      <Card className="space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-zinc-900">Spend your Love Points</h3>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              {pointsPerPlusDay} points = 1 day of LoveMate Plus (every tool unlocked). You have <strong className="text-zinc-900">{user?.points ?? 0}</strong> points
+              {plan !== 'free' ? ' · your plan already unlocks everything, so save them for later' : ''}.
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            {[1, 3, 7].map((days) => (
+              <Button
+                key={days}
+                size="sm"
+                variant={days === 1 ? 'primary' : 'secondary'}
+                disabled={(user?.points ?? 0) < days * pointsPerPlusDay}
+                onClick={() => redeemPointsForPlus(days)}
+              >
+                {days} day{days === 1 ? '' : 's'} · {days * pointsPerPlusDay} pts
+              </Button>
+            ))}
+          </div>
+        </div>
+      </Card>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

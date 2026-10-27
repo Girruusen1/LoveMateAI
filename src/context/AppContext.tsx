@@ -174,6 +174,9 @@ interface AppContextType {
   updateUserPreferences: (prefs: Partial<User>) => void;
   // Gamification & Points
   addPoints: (amount: number, reason?: string) => void;
+  /** Spend Love Points on free Plus days (pointsPerPlusDay each). Returns false when not possible. */
+  redeemPointsForPlus: (days: number) => boolean;
+  pointsPerPlusDay: number;
   badges: Badge[];
   unlockBadge: (badgeId: string) => void;
   // AI Memory (V1/V2 baseline)
@@ -1120,6 +1123,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'trialing',
       trialEndsAt: new Date(Date.now() + TRIAL_DAYS * 86_400_000).toISOString(),
     });
+  };
+
+  // Love Points buy something real: 500 points = 1 day of Plus (free users only; extends a running trial).
+  const POINTS_PER_PLUS_DAY = 500;
+  const redeemPointsForPlus = (days: number): boolean => {
+    if (!user) return false;
+    const cost = days * POINTS_PER_PLUS_DAY;
+    if (user.points < cost) {
+      showToast(`You need ${cost} Love Points for ${days} day${days === 1 ? '' : 's'} of Plus. You have ${user.points}.`, 'info');
+      return false;
+    }
+    const onTrial = userSubscription.status === 'trialing' && trialDaysLeft !== null;
+    if (plan !== 'free' && !onTrial) {
+      showToast('You already have every tool unlocked. Save your points for when your plan ends.', 'info');
+      return false;
+    }
+    const from = Math.max(Date.now(), onTrial && userSubscription.trialEndsAt ? Date.parse(userSubscription.trialEndsAt) : 0);
+    setUserSubscription((prev) => ({ ...prev, tier: 'plus', status: 'trialing', trialEndsAt: new Date(from + days * 86_400_000).toISOString() }));
+    setUser((prev) => (prev ? { ...prev, points: prev.points - cost } : prev));
+    triggerConfetti();
+    showToast(`${days} day${days === 1 ? '' : 's'} of Plus unlocked with ${cost} Love Points! 💗`, 'love');
+    return true;
   };
 
   const canUseFeature = (feature: EntitlementFeature): boolean => {
@@ -3067,6 +3092,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         plan,
         hasPlan,
         trialDaysLeft,
+        redeemPointsForPlus,
+        pointsPerPlusDay: POINTS_PER_PLUS_DAY,
         planFromPartner,
         aiUsageToday,
         coupleQuizAnswers,

@@ -213,6 +213,12 @@ export const VoiceLoveMateView: React.FC = () => {
 
   const form = (
     <Card padding="lg" className="text-center space-y-6">
+      {!speechSupported && (
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-left">
+          Voice input works in Chrome and Edge (Android and computers). This browser doesn't support it (for example Safari on
+          iPhone), so type your message below instead. Replies are still read out loud where the browser allows it.
+        </p>
+      )}
       {speechSupported ? (
         <>
           {/* Animated Mic Button */}
