@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CheckCircle, Sparkles, Sprout } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AIService } from '../../services/ai';
+import { isAiLimitError } from '../../utils/aiErrors';
 import { HealthCheckResult } from '../../types';
 import { Badge, Button, Card, PageContainer, PageHeader, ToolLayout } from '../common/UIPrimitives';
 
@@ -37,16 +38,19 @@ export const RelationshipCheckInView: React.FC = () => {
     setRatings((prev) => ({ ...prev, [catId]: val }));
   };
 
-  const handleRunCheckIn = () => {
+  const handleRunCheckIn = async () => {
     setIsEvaluating(true);
-    setTimeout(() => {
-      const evaluation = AIService.generateHealthCheck(ratings);
+    try {
+      const evaluation = await AIService.generateHealthCheck(ratings);
       setResult(evaluation);
-      setIsEvaluating(false);
       triggerConfetti();
       addPoints(20, 'Completed Relationship Health Check');
       showToast('Health reflection synthesized! 🌱', 'love');
-    }, 600);
+    } catch (e) {
+      if (!isAiLimitError(e)) showToast('Could not generate your reflection. Please retry.', 'info');
+    } finally {
+      setIsEvaluating(false);
+    }
   };
 
   return (

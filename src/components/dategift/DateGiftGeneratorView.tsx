@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, Gift, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AIService } from '../../services/ai';
+import { isAiLimitError } from '../../utils/aiErrors';
 import { DateGiftIdea } from '../../types';
 import {
   Badge,
@@ -22,23 +23,27 @@ export const DateGiftGeneratorView: React.FC = () => {
   const [budget, setBudget] = useState('Moderate');
   const [vibe, setVibe] = useState('Romantic & Intimate');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [ideas, setIdeas] = useState<DateGiftIdea>(
-    AIService.generateDateAndGift('First Date', 'Moderate', 'Romantic & Intimate')
+  // Offline sample so the page has content before the first generation
+  const [ideas, setIdeas] = useState<DateGiftIdea>(() =>
+    AIService.sampleDateAndGift('First Date', 'Moderate', 'Romantic & Intimate')
   );
 
   const occasions = ['First Date', 'Anniversary', 'Casual Weekend Hangout', 'Making Up After a Fight', 'Birthday Surprise'];
   const budgets = ['Low / Free', 'Moderate', 'Luxury / Special Occasion'];
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    setTimeout(() => {
-      const generated = AIService.generateDateAndGift(occasion, budget, vibe);
+    try {
+      const generated = await AIService.generateDateAndGift(occasion, budget, vibe);
       setIdeas(generated);
-      setIsGenerating(false);
       triggerConfetti();
       addPoints(15, 'Generated Date Plans');
       showToast('Date & Gift ideas curated! 🎁', 'love');
-    }, 600);
+    } catch (e) {
+      if (!isAiLimitError(e)) showToast('Could not generate ideas. Please retry.', 'info');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const form = (

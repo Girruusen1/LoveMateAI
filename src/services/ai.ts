@@ -16,18 +16,31 @@ import type {
   AgentTaskPriority,
   AgentTaskType,
   AIPersonality,
+  ConfessSituation,
   ConversationCoachPlan,
+  CrushAnalysisResult,
+  CrushAnswers,
+  DateGiftIdea,
   DatePlanItinerary,
   DecodeResult,
   GeneratedGameSession,
   GiftIntelligenceResult,
+  HealthCheckResult,
+  HealthCheckScore,
   Language,
+  LoveStoryEpisode,
+  OurStoryMemories,
+  RealOurStoryChapter,
   RelationshipDetectiveResult,
+  RelationshipSignalResult,
   ReplyCopilotResult,
   ReplySuggestion,
   RoleplayScenario,
+  RoleplayScorecard,
+  ScrapbookCaptionContext,
   ScreenshotAnalysis,
   SharedGoal,
+  ShouldIConfessResult,
   SharedMemory,
   TripTogetherItinerary,
   UserMemoryItem,
@@ -38,6 +51,19 @@ import type {
 
 const live = async () => (await getGenAIStatus()).enabled;
 const orUndef = <T,>(v: T | null | undefined): T | undefined => (v == null ? undefined : v);
+const clamp = (n: number, min: number, max: number) => (Number.isFinite(n) ? Math.max(min, Math.min(max, Math.round(n))) : min);
+
+/** Check-in slider ids (RelationshipCheckInView) and the categories they score. */
+const HEALTH_CATEGORIES: [string, HealthCheckScore['category']][] = [
+  ['comm', 'Communication'],
+  ['trust', 'Trust'],
+  ['time', 'Quality Time'],
+  ['emotion', 'Emotional Connection'],
+  ['apprec', 'Appreciation'],
+  ['conflict', 'Conflict Resolution'],
+  ['fun', 'Fun'],
+  ['support', 'Support'],
+];
 
 /** Retrieval step: pick the memories most relevant to the query (lexical retriever from the simulator). */
 const relevantMemories = (query: string, memories: UserMemoryItem[]) => {
@@ -260,5 +286,124 @@ export class AIService extends MockAIService {
       sharedGoals: sharedGoals.map((g) => g.title),
     });
     return d.advice;
+  }
+
+  // 23. Crush analyser
+  static async analyzeCrush(answers: CrushAnswers): Promise<CrushAnalysisResult> {
+    if (!(await live())) return super.analyzeCrush(answers);
+    const d = await runTask<CrushAnalysisResult>('crushAnalysis', { answers });
+    return { ...d, score: clamp(d.score, 0, 100), signals: d.signals.slice(0, 6) };
+  }
+
+  // 24. Green / yellow / red flag signals
+  static async analyzeRelationshipSignal(behaviorDescription: string): Promise<RelationshipSignalResult> {
+    if (!(await live())) return super.analyzeRelationshipSignal(behaviorDescription);
+    const d = await runTask<RelationshipSignalResult>('relationshipSignal', { behaviorDescription });
+    return { ...d, whatToNotice: d.whatToNotice.slice(0, 4) };
+  }
+
+  // 25. Role-play scorecard
+  static async evaluateRoleplaySession(scenario: RoleplayScenario, transcript: { sender: 'user' | 'ai'; text: string }[]): Promise<RoleplayScorecard> {
+    if (!(await live())) return super.evaluateRoleplaySession(scenario, transcript);
+    const d = await runTask<RoleplayScorecard>('roleplayScore', { scenario, transcript });
+    return {
+      ...d,
+      confidence: clamp(d.confidence, 0, 10),
+      clarity: clamp(d.clarity, 0, 10),
+      naturalness: clamp(d.naturalness, 0, 10),
+      whatWorked: d.whatWorked.slice(0, 3),
+      whatCouldImprove: d.whatCouldImprove.slice(0, 3),
+    };
+  }
+
+  // 26. Should I confess?
+  static async evaluateShouldIConfess(situation: ConfessSituation): Promise<ShouldIConfessResult> {
+    if (!(await live())) return super.evaluateShouldIConfess(situation);
+    const d = await runTask<ShouldIConfessResult>('confessReadiness', { situation });
+    return { ...d, confidencePercent: clamp(d.confidencePercent, 0, 100), reasons: d.reasons.slice(0, 3), recommendedSteps: d.recommendedSteps.slice(0, 4) };
+  }
+
+  // 27. Date & gift ideas
+  static async generateDateAndGift(occasion: string, budget: string, vibe: string): Promise<DateGiftIdea> {
+    if (!(await live())) return super.generateDateAndGift(occasion, budget, vibe);
+    const d = await runTask<Pick<DateGiftIdea, 'dateIdeas' | 'giftIdeas'>>('dateAndGift', { occasion, budget, vibe });
+    return { id: uid('dg'), occasion, budget, dateIdeas: d.dateIdeas.slice(0, 3), giftIdeas: d.giftIdeas.slice(0, 3) };
+  }
+
+  // 28. Relationship check-in. Scores are the user's own ratings; the model writes the reflection around them.
+  static async generateHealthCheck(answers: Record<string, number>): Promise<HealthCheckResult> {
+    if (!(await live())) return super.generateHealthCheck(answers);
+    const d = await runTask<Omit<HealthCheckResult, 'scores'> & { notes: Partial<Record<string, string>> }>('healthCheck', { answers });
+    const scores = HEALTH_CATEGORIES.filter(([id]) => Number.isFinite(answers[id])).map(([id, category]) => ({
+      category,
+      score: clamp(answers[id], 0, 100),
+      note: d.notes[id] || '',
+    }));
+    return {
+      scores,
+      strengths: d.strengths.slice(0, 3),
+      areasWorthDiscussing: d.areasWorthDiscussing.slice(0, 3),
+      suggestedActions: d.suggestedActions.slice(0, 3),
+      overallHealthLabel: d.overallHealthLabel,
+    };
+  }
+
+  // 29. Love card text
+  static async generateLoveCardMessage(type: string, recipient: string, theme: string): Promise<{ quote: string; personalNote: string }> {
+    if (!(await live())) return super.generateLoveCardMessage(type, recipient, theme);
+    return runTask<{ quote: string; personalNote: string }>('loveCard', { type, recipient, theme });
+  }
+
+  // 30. Our real story (five chapters from real memories)
+  static async generateOurStoryChapters(partners: string, memories: OurStoryMemories, style: 'romantic' | 'funny' | 'cinematic' = 'romantic'): Promise<RealOurStoryChapter[]> {
+    if (!(await live())) return super.generateOurStoryChapters(partners, memories, style);
+    const d = await runTask<{ chapters: Omit<RealOurStoryChapter, 'chapterNumber'>[] }>('ourStory', { partners, memories, style });
+    return d.chapters.slice(0, 5).map((c, i) => ({ chapterNumber: i + 1, ...c }));
+  }
+
+  // 31. Scrapbook captions
+  static async generateScrapbookCaption(title: string, detail: string, context: ScrapbookCaptionContext = {}): Promise<{ romantic: string; funny: string; shortStory: string }> {
+    if (!(await live())) return super.generateScrapbookCaption(title, detail, context);
+    return runTask<{ romantic: string; funny: string; shortStory: string }>('scrapbookCaption', { title, detail, ...context });
+  }
+
+  // 32. AI love story, one chapter at a time
+  static async generateStoryEpisode(
+    protagonist: string,
+    partner: string,
+    howWeMet: string,
+    setting: string,
+    episodeNum: number,
+    mood?: string,
+    previousEpisodes: LoveStoryEpisode[] = []
+  ): Promise<LoveStoryEpisode> {
+    if (!(await live())) return super.generateStoryEpisode(protagonist, partner, howWeMet, setting, episodeNum, mood, previousEpisodes);
+    const d = await runTask<{ title: string; content: string }>('storyEpisode', {
+      protagonist,
+      partner,
+      howWeMet,
+      setting,
+      episodeNum,
+      mood,
+      previousEpisodes: previousEpisodes.slice(-3).map((e) => ({ title: e.title, content: e.content })),
+    });
+    return { episodeNumber: episodeNum, title: d.title, content: d.content };
+  }
+
+  // 33. Surprise plan (Magic button)
+  static async generateSurprisePlan(
+    budget: string,
+    mood: string,
+    locationType: 'together' | 'long_distance',
+    partnerName?: string
+  ): Promise<{ title: string; mood: string; timeline: { time: string; action: string }[]; foodIdea: string; playlistSuggestion: string; secretClosingGesture: string }> {
+    if (!(await live())) return super.generateSurprisePlan(budget, mood, locationType, partnerName);
+    const d = await runTask<{ title: string; timeline: { time: string; action: string }[]; foodIdea: string; playlistSuggestion: string; secretClosingGesture: string }>('surprisePlan', {
+      budget,
+      mood,
+      locationType,
+      partnerName,
+    });
+    return { ...d, mood: mood || 'Romantic & Playful', timeline: d.timeline.slice(0, 6) };
   }
 }

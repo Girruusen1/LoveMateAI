@@ -52,7 +52,11 @@ export const ScrapbookView: React.FC = () => {
   const handleGenerateCaptions = async () => {
     setGeneratingCaption(true);
     try {
-      const res = await AIService.generateScrapbookCaption(currentPage.title, currentPage.caption);
+      const res = await AIService.generateScrapbookCaption(currentPage.title, currentPage.caption, {
+        date: currentPage.date,
+        location: currentPage.location,
+        tags: currentPage.tag,
+      });
       setGeneratedCaptions(res);
       showToast('AI crafted 3 new scrapbook captions! ✨', 'love');
     } catch (e) {

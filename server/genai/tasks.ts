@@ -43,6 +43,42 @@ const NAV_TABS = [
 const oneOf = <const T extends readonly [string, ...string[]]>(values: T, fallback: T[number]) => z.enum(values).catch(fallback);
 
 const level = oneOf(['Low', 'Medium', 'High'], 'Medium');
+const flag = oneOf(['green', 'yellow', 'red'], 'yellow');
+
+/** For tools whose inputs are free text: answer in whatever language the user typed in. */
+const MATCH_LANGUAGE =
+  'Write in the same language the user wrote their inputs in: natural Roman-script Hinglish if they wrote Hinglish, Devanagari Hindi if they wrote Devanagari, otherwise English.';
+const yesNo = (v: unknown) => (v === true || v === 'true' ? 'yes' : 'no');
+
+/** Crush analyser answers arrive as option codes; spell them out so the model reads real observations. */
+const CRUSH_ANSWERS: Record<string, { question: string; options: Record<string, string> }> = {
+  initiates: { question: 'Who usually starts the conversation', options: { often: 'they initiate often', half: 'roughly 50/50', rarely: 'almost always the user' } },
+  replySpeed: { question: 'How fast they reply', options: { instant: 'within minutes', fast: 'within 1-2 hours, and they apologise if late', slow: 'hours or days later, with dry replies' } },
+  memory: { question: 'Whether they remember small details the user told them', options: { remembers_everything: 'yes, even tiny things', average: 'only the big topics' } },
+  plans: { question: 'Whether they have met or planned to meet one-on-one', options: { yes: 'yes, they hang out or have planned to', no: 'only in groups or online' } },
+  length: { question: 'How long their messages are', options: { short: 'short', balanced: 'balanced, similar to the user\'s', long: 'long and detailed' } },
+  emojis: { question: 'How much they use emojis', options: { none: 'rarely or never', some: 'sometimes', lots: 'a lot' } },
+};
+
+const HEALTH_CATEGORIES = [
+  ['comm', 'Communication', 'feeling heard and understood without defensiveness'],
+  ['trust', 'Trust', 'confidence in integrity and emotional transparency'],
+  ['time', 'Quality Time', 'undivided, phone-free presence and shared rituals'],
+  ['emotion', 'Emotional Connection', 'vulnerability and intuitive empathy'],
+  ['apprec', 'Appreciation', 'verbalising love for small daily gestures'],
+  ['conflict', 'Conflict Resolution', 'fighting the problem rather than each other'],
+  ['fun', 'Fun', 'spontaneous laughter, banter and lightness'],
+  ['support', 'Support', 'encouraging personal goals and individual growth'],
+] as const;
+
+const transcriptText = (v: unknown, userLabel = 'User', otherLabel = 'Other person') =>
+  (Array.isArray(v) ? v : [])
+    .slice(-30)
+    .map((t) => {
+      const m = (t ?? {}) as Record<string, unknown>;
+      return `${m.sender === 'user' ? userLabel : otherLabel}: ${str(m.text, 600)}`;
+    })
+    .join('\n');
 
 export const TASKS = {
   decode: {
@@ -311,6 +347,180 @@ export const TASKS = {
     build: (i) => {
       const u = (i.userContext ?? {}) as Record<string, unknown>;
       return `Turn the user's goal into an action plan the app can track. The app can add calendar events, wishlist items and reminders, but never sends messages, spends money or books anything without the user's explicit confirmation.\nUser: ${str(u.name, 60)}; partner: ${str(u.partnerName, 60) || 'not specified'}.\n${list(i.memories, 12).length ? `What you remember:\n- ${list(i.memories, 12).join('\n- ')}\n` : ''}\n${quote('Goal', str(i.prompt))}`;
+    },
+  },
+
+  crushAnalysis: {
+    effort: 'medium',
+    schema: z.object({
+      score: z.number().describe('0-100: how strongly these cues suggest interest. Behaviour never proves feelings, so stay between 15 and 90.'),
+      ratingLabel: z.string().describe('short verdict, 3-7 words, may end with one emoji'),
+      summary: z.string().describe('1-2 sentences tying the verdict to the answers'),
+      signals: z
+        .array(z.object({ label: z.string().describe('2-4 word name of the cue'), status: oneOf(['positive', 'neutral', 'watchout'], 'neutral'), detail: z.string().describe('one sentence on what this cue may and may not mean') }))
+        .describe('one entry per answered cue, 3-6 entries'),
+      aiAdvice: z.string().describe('one or two sentences: a low-pressure way to learn more'),
+      nextMove: z.string().describe('one short message the user could actually text them, no quotation marks'),
+    }),
+    build: (i) => {
+      const a = (i.answers ?? {}) as Record<string, unknown>;
+      const lines = Object.entries(CRUSH_ANSWERS)
+        .map(([key, { question, options }]) => {
+          const v = str(a[key], 60);
+          return v ? `- ${question}: ${options[v] ?? v}` : '';
+        })
+        .filter(Boolean);
+      return `The user wants to know whether their crush might be interested. Read the behavioural cues they observed. Be encouraging but realistic: these cues are hints, not proof, and you must never promise how the crush feels. Weigh each cue honestly; mixed or one-sided cues deserve a moderate score and a "watchout" where it applies. Base the score only on these answers.\n\nWhat they observed:\n${lines.join('\n') || '(no answers)'}\n\nThe advice and next move should help the user find out directly and respectfully, never test, pressure or play games with the crush.`;
+    },
+  },
+
+  relationshipSignal: {
+    effort: 'medium',
+    schema: z.object({
+      flagType: flag.describe('green = healthy, yellow = ambiguous / worth discussing, red = concerning pattern'),
+      label: z.string().describe('short headline starting with 🟢, 🟡 or 🔴 to match flagType'),
+      analysis: z.string().describe('2-3 sentences about this specific behaviour, framed as possibilities'),
+      whatToNotice: z.array(z.string()).describe('2-4 concrete things to watch for that would confirm or ease the concern'),
+      whatToAsk: z.string().describe('one calm I-statement or question the user could say, in quotation marks'),
+      healthyResponse: z.string().describe('1-2 sentences on how to respond in a healthy way'),
+    }),
+    build: (i) =>
+      `Classify a behaviour the user noticed in someone they are dating or close to as a green, yellow or red flag. Judge the behaviour itself, including its context: one-off thoughtfulness or honest explanations lean green, ambiguous habits lean yellow, and control, contempt, coercion, intimidation, isolation or repeated deception are red. Don't diagnose anyone. If it sounds like abuse or the user may be unsafe, say so clearly and include the safety guidance from your instructions in healthyResponse. ${MATCH_LANGUAGE}\n\n${quote('What they observed', str(i.behaviorDescription, 2000))}`,
+  },
+
+  roleplayScore: {
+    effort: 'medium',
+    schema: z.object({
+      confidence: z.number().describe('1-10, how confident and self-assured the user sounded'),
+      clarity: z.number().describe('1-10, how clearly they said what they wanted'),
+      naturalness: z.number().describe('1-10, how natural and human they sounded'),
+      pressureLevel: level.describe('how much pressure the user put on the other person: Low is best'),
+      whatWorked: z.array(z.string()).describe('2-3 specific things the user did well, quoting or referring to their own words'),
+      whatCouldImprove: z.array(z.string()).describe('2-3 specific, kind suggestions'),
+      betterScript: z.string().describe('a stronger version of what the user was trying to say, 1-3 sentences in their voice, no quotation marks'),
+    }),
+    build: (i) => {
+      const sc = (i.scenario ?? {}) as Record<string, unknown>;
+      const transcript = transcriptText(i.transcript, 'User', 'Practice partner');
+      const userTurns = (Array.isArray(i.transcript) ? i.transcript : []).filter((t) => (t as Record<string, unknown>)?.sender === 'user').length;
+      return `The user just finished a practice role-play of a real relationship conversation. Score only the user's messages, honestly and kindly. Scores must reflect what they actually wrote: short or vague messages get lower clarity, pushy or guilt-tripping ones get a higher pressure level. ${userTurns === 0 ? 'The user did not send any messages, so give low scores and encourage them to try.' : ''} ${MATCH_LANGUAGE}\nScenario: ${str(sc.title, 120)}\nThe practice partner played: ${str(sc.characterRole, 300)}\nContext: ${str(sc.context, 600)}\n\nTranscript:\n${transcript || '(empty)'}`;
+    },
+  },
+
+  confessReadiness: {
+    effort: 'medium',
+    schema: z.object({
+      status: flag.describe('green = good time, yellow = build more connection first, red = not yet'),
+      statusLabel: z.string().describe('short verdict starting with 🟢, 🟡 or 🔴 to match status'),
+      confidencePercent: z.number().describe('0-100: how confident you are in this timing read (not the chance they say yes)'),
+      analysis: z.string().describe('1-2 sentences tying the verdict to their situation'),
+      reasons: z.array(z.string()).describe('exactly 3 short reasons, each under 15 words'),
+      recommendedSteps: z.array(z.string()).describe('2-4 concrete next steps'),
+      suggestedScript: z.string().describe('2-3 sentences they could say, honest and low-pressure, leaving the other person free to say no. No quotation marks.'),
+    }),
+    build: (i) => {
+      const s = (i.situation ?? {}) as Record<string, unknown>;
+      return `The user is deciding whether now is a good time to confess their feelings. Give an honest timing read: encouraging, but realistic. You cannot know how the other person feels, so never promise an outcome. A close friendship raises the stakes and deserves care, not avoidance. Whatever the verdict, the steps and script must respect the other person's freedom to say no and keep any friendship intact. ${MATCH_LANGUAGE}\nHow long they have known each other: ${str(s.howLongKnown, 60) || 'not specified'}\nThey hang out one-on-one: ${yesNo(s.has1on1Hangouts)}\nThere is noticeable flirting or tension: ${yesNo(s.flirtyVibe)}\nThey are currently close best friends: ${yesNo(s.isCloseFriend)}\n\n${quote('Their situation in their own words', str(s.story, 1500))}`;
+    },
+  },
+
+  dateAndGift: {
+    effort: 'low',
+    schema: z.object({
+      dateIdeas: z
+        .array(z.object({ title: z.string(), description: z.string().describe('1-2 sentences'), estimatedCost: z.string().describe('e.g. "₹800-1,200" or "Free"'), vibe: z.string().describe('1-3 words'), insiderTip: z.string().describe('one practical tip') }))
+        .describe('exactly 3 distinct date ideas'),
+      giftIdeas: z
+        .array(z.object({ item: z.string(), whyTheyWillLoveIt: z.string().describe('one sentence'), priceRange: z.string().describe('in rupees, e.g. "₹500-900"') }))
+        .describe('exactly 3 gift ideas'),
+    }),
+    build: (i) =>
+      `Suggest date ideas and matching gifts for this occasion. Fit every idea to the occasion and budget level, and make them doable in an Indian city. Use realistic kinds of places; don't invent business names. Costs in Indian rupees.\nOccasion: ${str(i.occasion, 80) || 'a date'}\nBudget level: ${str(i.budget, 60) || 'moderate'} (Low / Free = under ₹500 total, Moderate = ₹500-3,000, Luxury = above ₹3,000)\nVibe: ${str(i.vibe, 80) || 'romantic'}${/making up|fight/i.test(str(i.occasion, 80)) ? '\nThis is after a fight: keep it gentle, focused on reconnecting and listening, never a way to skip the apology.' : ''}`,
+  },
+
+  healthCheck: {
+    effort: 'medium',
+    schema: z.object({
+      notes: z
+        .object(Object.fromEntries(HEALTH_CATEGORIES.map(([id, label]) => [id, z.string().describe(`one sentence about ${label} that reflects its rating`)])) as Record<(typeof HEALTH_CATEGORIES)[number][0], z.ZodString>)
+        .describe('a note per pillar'),
+      strengths: z.array(z.string()).describe('2-3 full sentences, each naming one of the highest-rated pillars and what it says about them'),
+      areasWorthDiscussing: z.array(z.string()).describe('2-3 full sentences, each naming one of the lowest-rated pillars and a gentle idea for it'),
+      suggestedActions: z.array(z.string()).describe('2-3 small concrete actions for this week, aimed at the lowest-rated pillars'),
+      overallHealthLabel: z.string().describe('3-6 word summary that matches the average rating, may end with one emoji'),
+    }),
+    build: (i) => {
+      const a = (i.answers ?? {}) as Record<string, unknown>;
+      const rows = HEALTH_CATEGORIES.filter(([id]) => a[id] != null).map(([id, label, desc]) => ({ id, label, desc, score: num(a[id], 0, 100, 50) }));
+      const avg = rows.length ? Math.round(rows.reduce((s, r) => s + r.score, 0) / rows.length) : 0;
+      return `A user rated their relationship over the past two weeks on eight pillars (0-100, higher is better). Write a reflection that follows directly from these ratings: praise what is rated high, gently name what is rated low, and never contradict a rating. This is a reflection tool, not a diagnosis.\n\n${rows.map((r) => `- ${r.label} (${r.id}): ${r.score}/100 (${r.desc})`).join('\n') || '(no ratings)'}\nAverage: ${avg}/100\n\nFor the label: 85+ is thriving, 70-84 is healthy with room to grow, 55-69 needs some attention, below 55 needs care and honest conversation.`;
+    },
+  },
+
+  loveCard: {
+    effort: 'low',
+    schema: z.object({
+      quote: z.string().describe('one original, universal line for the card front, under 20 words. Do not include any name. No quotation marks.'),
+      personalNote: z.string().describe('2-3 warm sentences to the recipient by name, fitting the card type'),
+    }),
+    build: (i) =>
+      `Write the text for a digital love card.\nCard type: ${str(i.type, 60) || 'Just Because'}\nRecipient: ${str(i.recipient, 60) || 'my partner'}\nVisual theme (match its mood): ${str(i.theme, 40) || 'soft-rose'}\nMake it feel personal and specific to the card type, not a greeting-card cliche. An apology card should own the mistake without excuses or guilt-tripping. ${MATCH_LANGUAGE}`,
+  },
+
+  ourStory: {
+    effort: 'medium',
+    schema: z.object({
+      chapters: z
+        .array(z.object({ title: z.string().describe('3-7 words'), subtitle: z.string().describe('3-8 words'), content: z.string().describe('80-130 words') }))
+        .describe('exactly 5 chapters, in this order: how they met, first date, funny memory, favourite place, what they love about each other'),
+    }),
+    build: (i) => {
+      const m = (i.memories ?? {}) as Record<string, unknown>;
+      const style = str(i.style, 20);
+      const styleNote = style === 'funny' ? 'funny and affectionate, with light teasing' : style === 'cinematic' ? 'cinematic, like scenes in a film, with vivid sensory detail' : 'romantic and heartfelt';
+      return `Write a five-chapter story of this couple's real relationship, built from their own memories. Each chapter centres on one memory, in order. Keep the facts they gave you exactly, including who did what, and use their names; add only small sensory details, never new events or twists. Style: ${styleNote}. Keep it wholesome. ${MATCH_LANGUAGE}\nThe couple: ${str(i.partners, 120) || 'the two of them'}\n\n${quote('1. How they met', str(m.howMet, 600))}\n\n${quote('2. First date', str(m.firstDate, 600))}\n\n${quote('3. Funny memory', str(m.funnyMemory, 600))}\n\n${quote('4. Favourite place', str(m.favoritePlace, 600))}\n\n${quote('5. What the user loves about their partner (the user\'s own words: "I/my" is the user, "you/he/she" is the partner; keep each quality with the right person)', str(m.whatYouLove, 600))}`;
+    },
+  },
+
+  scrapbookCaption: {
+    effort: 'low',
+    schema: z.object({
+      romantic: z.string().describe('one romantic caption sentence'),
+      funny: z.string().describe('one playful, funny caption sentence'),
+      shortStory: z.string().describe('3-4 sentences telling the moment as a tiny story'),
+    }),
+    build: (i) =>
+      `Write captions for a page in a couple's scrapbook. Ground them in the details of this memory; don't invent major events. ${MATCH_LANGUAGE}\nMemory title: ${str(i.title, 200) || 'a memory'}\n${str(i.date, 60) ? `Date: ${str(i.date, 60)}\n` : ''}${str(i.location, 120) ? `Place: ${str(i.location, 120)}\n` : ''}${str(i.tags, 200) ? `Tags: ${str(i.tags, 200)}\n` : ''}\n${quote('Their own description', str(i.detail, 1000))}`,
+  },
+
+  storyEpisode: {
+    effort: 'low',
+    schema: z.object({
+      title: z.string().describe('3-7 word chapter title, without the word "Chapter" or a number'),
+      content: z.string().describe('130-220 words of story'),
+    }),
+    build: (i) => {
+      const n = num(i.episodeNum, 1, 99, 1);
+      const prev = (Array.isArray(i.previousEpisodes) ? i.previousEpisodes : []).slice(-3).map((e) => {
+        const x = (e ?? {}) as Record<string, unknown>;
+        return `${str(x.title, 120)}: ${str(x.content, 1200)}`;
+      });
+      return `Write chapter ${n} of an ongoing love story starring the user and their partner. ${n === 1 ? 'Open with how they met.' : 'Continue naturally from the previous chapters: a new moment in their relationship, not a retelling.'} Use their names and the setting. Tone: ${str(i.mood, 60) || 'romantic and heartwarming'}. Keep it wholesome, nothing explicit, and no controlling or possessive behaviour presented as romantic. ${MATCH_LANGUAGE}\nMain character: ${str(i.protagonist, 60) || 'the narrator'}\nPartner: ${str(i.partner, 60) || 'their partner'}\nHow they met: ${str(i.howWeMet, 400)}\nSetting: ${str(i.setting, 200) || 'a city in India'}\n${prev.length ? `\nPrevious chapters (most recent last):\n${prev.join('\n\n')}` : ''}`;
+    },
+  },
+
+  surprisePlan: {
+    effort: 'low',
+    schema: z.object({
+      title: z.string().describe('a catchy 3-7 word name for the surprise'),
+      timeline: z.array(z.object({ time: z.string().describe('24-hour HH:MM'), action: z.string().describe('one sentence') })).describe('4-6 steps in time order'),
+      foodIdea: z.string(),
+      playlistSuggestion: z.string().describe('a mood or genre with 2-3 example artists or songs, and rough length'),
+      secretClosingGesture: z.string().describe('one small, heartfelt finishing touch'),
+    }),
+    build: (i) => {
+      const ld = str(i.locationType, 20) === 'long_distance';
+      return `Plan a surprise for the user's partner. ${ld ? 'They are in a long-distance relationship, so every step must work remotely (a scheduled call, a delivery to the partner, a shared online activity).' : 'They are in the same city and will be together.'} Stay within budget (costs in Indian rupees) and fit the mood and duration. The surprise should be something the partner would enjoy and feel comfortable with: nothing public or embarrassing unless the mood asks for it, and nothing that needs access to the partner's phone, accounts or location.\nPartner: ${str(i.partnerName, 60) || 'their partner'}\nBudget: ${str(i.budget, 80) || 'moderate'}\nMood and duration: ${str(i.mood, 120) || 'romantic, one evening'}`;
     },
   },
 } satisfies Record<string, TaskDef>;

@@ -17,6 +17,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { ROLEPLAY_SCENARIOS } from '../../data/seedData';
 import { AIService } from '../../services/ai';
+import { isAiLimitError } from '../../utils/aiErrors';
 import { RoleplayMessage, RoleplayScenario, RoleplayScorecard } from '../../types';
 import { Button, Card, Chip, PageContainer, PageHeader, SectionHeading } from '../common/UIPrimitives';
 
@@ -43,6 +44,7 @@ export const RoleplayView: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [scorecard, setScorecard] = useState<RoleplayScorecard | null>(null);
+  const [isScoring, setIsScoring] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -96,13 +98,21 @@ export const RoleplayView: React.FC = () => {
     }
   };
 
-  const handleFinishRoleplay = () => {
-    const card = AIService.evaluateRoleplaySession(selectedScenario, messages);
-    setScorecard(card);
-    unlockBadge('roleplay_rookie');
-    addPoints(25, 'Completed Practice Conversation');
-    triggerConfetti();
-    showToast('Roleplay feedback ready! 🎭', 'love');
+  const handleFinishRoleplay = async () => {
+    if (isScoring) return;
+    setIsScoring(true);
+    try {
+      const card = await AIService.evaluateRoleplaySession(selectedScenario, messages);
+      setScorecard(card);
+      unlockBadge('roleplay_rookie');
+      addPoints(25, 'Completed Practice Conversation');
+      triggerConfetti();
+      showToast('Roleplay feedback ready! 🎭', 'love');
+    } catch (e) {
+      if (!isAiLimitError(e)) showToast('Could not score this practice. Please retry.', 'info');
+    } finally {
+      setIsScoring(false);
+    }
   };
 
   const handleRestart = () => {
@@ -151,6 +161,8 @@ export const RoleplayView: React.FC = () => {
             variant="primary"
             size="sm"
             onClick={handleFinishRoleplay}
+            loading={isScoring}
+            disabled={isTyping}
             icon={<Trophy className="w-3.5 h-3.5" />}
             className="shrink-0"
           >

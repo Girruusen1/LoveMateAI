@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BookHeart, Bookmark, Download, Edit3, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AIService } from '../../services/ai';
+import { isAiLimitError } from '../../utils/aiErrors';
 import { RealOurStory, RealOurStoryChapter } from '../../types';
 import {
   Badge,
@@ -29,28 +30,25 @@ export const OurRealStoryView: React.FC = () => {
   const [style, setStyle] = useState<'romantic' | 'funny' | 'cinematic'>('romantic');
 
   const [chapters, setChapters] = useState<RealOurStoryChapter[]>(() => {
-    return AIService.generateOurStoryChapters(
-      `${user?.name || 'You'} & ${user?.partnerName || 'your partner'}`,
-      {
-        howMet: 'Spilled coffee in a cozy bookstore cafe in Mumbai on a rainy evening',
-        firstDate: 'Street tacos and long walk under one umbrella in the drizzle',
-        funnyMemory: 'Getting hopelessly lost trying to find a dessert shop and ending up laughing for hours',
-        favoritePlace: 'The rooftop sea breeze bench overlooking the city skyline',
-        whatYouLove: 'Your kind listening eyes, silly laughter, and making everyday feel special',
-      },
-      'romantic'
-    );
+    // Offline sample so the page has content before the first generation
+    return AIService.sampleOurStoryChapters(`${user?.name || 'You'} & ${user?.partnerName || 'your partner'}`, {
+      howMet: 'Spilled coffee in a cozy bookstore cafe in Mumbai on a rainy evening',
+      firstDate: 'Street tacos and long walk under one umbrella in the drizzle',
+      funnyMemory: 'Getting hopelessly lost trying to find a dessert shop and ending up laughing for hours',
+      favoritePlace: 'The rooftop sea breeze bench overlooking the city skyline',
+      whatYouLove: 'Your kind listening eyes, silly laughter, and making everyday feel special',
+    });
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingChapterIdx, setEditingChapterIdx] = useState<number | null>(null);
   const [editedText, setEditedText] = useState('');
 
-  const handleGenerate = (customStyle?: 'romantic' | 'funny' | 'cinematic') => {
+  const handleGenerate = async (customStyle?: 'romantic' | 'funny' | 'cinematic') => {
     const chosenStyle = customStyle || style;
     setIsGenerating(true);
-    setTimeout(() => {
-      const newChapters = AIService.generateOurStoryChapters(
+    try {
+      const newChapters = await AIService.generateOurStoryChapters(
         partners,
         {
           howMet,
@@ -62,11 +60,14 @@ export const OurRealStoryView: React.FC = () => {
         chosenStyle
       );
       setChapters(newChapters);
-      setIsGenerating(false);
       triggerConfetti();
       addPoints(25, 'Generated Real Our Story');
-      showToast(`Authored 5 Chapters in ${chosenStyle} style! 📖`, 'love');
-    }, 700);
+      showToast(`Authored ${newChapters.length} chapters in ${chosenStyle} style! 📖`, 'love');
+    } catch (e) {
+      if (!isAiLimitError(e)) showToast('Could not write your story. Please retry.', 'info');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSaveToVault = () => {
