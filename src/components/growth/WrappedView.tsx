@@ -10,6 +10,7 @@ import {
   Target,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { ShareCardButton } from '../common/ShareCardButton';
 import { LoveMateWrapped } from '../../types';
 import { Button, Card, PageContainer } from '../common/UIPrimitives';
 
@@ -299,6 +300,23 @@ export const WrappedView: React.FC = () => {
             <Button variant="secondary" size="sm" icon={<Download className="w-3.5 h-3.5" />} onClick={handleDownloadCard}>
               Download
             </Button>
+            <ShareCardButton
+              fileName={`lovemate-wrapped-${wrapped.year}`}
+              spec={{
+                eyebrow: `Wrapped ${wrapped.year}`,
+                names: [user?.name || 'You', partnerName],
+                hero: String(wrapped.daysConnected),
+                heroLabel: 'days connected',
+                headline: 'Our year in numbers',
+                lines: [
+                  `${wrapped.memoriesCreated} memories created`,
+                  `${wrapped.challengesCompleted} challenges finished`,
+                  `${coupleStreak}-day best couple streak`,
+                  `Favourite together: ${wrapped.favoriteActivity}`,
+                ],
+                footnote: wrapped.yearInOneSentence,
+              }}
+            />
           </div>
         </div>
 

@@ -24,11 +24,13 @@ import { useApp } from '../../context/AppContext';
 import { isAiLimitError } from '../../utils/aiErrors';
 import { SharedGoal, SharedPlanItem } from '../../types';
 import { AIService } from '../../services/ai';
+import { PhotoAttachment } from '../common/PhotoAttachment';
 import {
   Badge,
   Button,
   Card,
   Chip,
+  EmptyState,
   FieldLabel,
   Input,
   PageContainer,
@@ -91,6 +93,7 @@ export const OurSpaceView: React.FC = () => {
   const [memTitle, setMemTitle] = useState('');
   const [memCaption, setMemCaption] = useState('');
   const [memLocation, setMemLocation] = useState('');
+  const [memPhoto, setMemPhoto] = useState<string | null>(null);
 
   // Add goal form state
   const [goalTitle, setGoalTitle] = useState('');
@@ -118,11 +121,13 @@ export const OurSpaceView: React.FC = () => {
       location: memLocation.trim() || 'City Skyline',
       date: 'Today',
       tags: ['Special', 'Couples'],
-      photoUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&h=400&fit=crop',
+      // The compressed photo (<= ~150 KB JPEG data URL) lives on the memory so it persists with it.
+      photoUrl: memPhoto || undefined,
     });
     setMemTitle('');
     setMemCaption('');
     setMemLocation('');
+    setMemPhoto(null);
     setShowAddMemory(false);
   };
 
@@ -430,6 +435,18 @@ export const OurSpaceView: React.FC = () => {
             }
           />
 
+          {sharedMemories.length === 0 && (
+            <EmptyState
+              icon={<Camera className="w-6 h-6" />}
+              title="Start your shared memories"
+              description="Save the moments you both want to keep: a first trip, a rainy café, a silly inside joke. Photos stay private to the two of you."
+              actionLabel="Add first memory"
+              onAction={() => setShowAddMemory(true)}
+              secondaryActionLabel="Invite your partner"
+              onSecondaryAction={() => setActiveTab('couple-mode')}
+            />
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {sharedMemories.map((mem) => (
               <Card key={mem.id} padding="none" className="space-y-3">
@@ -473,6 +490,18 @@ export const OurSpaceView: React.FC = () => {
               </Button>
             }
           />
+
+          {(!goalsV2 || goalsV2.length === 0) && sharedGoals.length === 0 && (
+            <EmptyState
+              icon={<Target className="w-6 h-6" />}
+              title="Set your first goal together"
+              description="Pick one thing to build as a team, like a trip fund, a weekly date night or a no-phones dinner habit, and track it side by side."
+              actionLabel="Add first goal"
+              onAction={() => setShowAddGoal(true)}
+              secondaryActionLabel="Invite your partner"
+              onSecondaryAction={() => setActiveTab('couple-mode')}
+            />
+          )}
 
           {goalsV2 && goalsV2.length > 0 && (
             <div className="space-y-4">
@@ -525,7 +554,7 @@ export const OurSpaceView: React.FC = () => {
             </div>
           )}
 
-          <div className="space-y-3">
+          <div className={`space-y-3 ${sharedGoals.length === 0 ? 'hidden' : ''}`}>
             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Quick habit goals ({sharedGoals.length})</h3>
             {sharedGoals.map((g) => (
               <div
@@ -572,6 +601,18 @@ export const OurSpaceView: React.FC = () => {
               </Button>
             }
           />
+
+          {sharedPlans.length === 0 && (
+            <EmptyState
+              icon={<Wine className="w-6 h-6" />}
+              title="Start your bucket list"
+              description="Collect the dates and trips you keep saying 'someday' about, then tap one off together when it finally happens."
+              actionLabel="Add first idea"
+              onAction={() => setShowAddPlan(true)}
+              secondaryActionLabel="Invite your partner"
+              onSecondaryAction={() => setActiveTab('couple-mode')}
+            />
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {sharedPlans.map((p) => (
@@ -716,6 +757,10 @@ export const OurSpaceView: React.FC = () => {
                   onChange={(e) => setMemCaption(e.target.value)}
                   placeholder="What made this moment unforgettable?"
                 />
+              </div>
+              <div>
+                <FieldLabel hint="optional">Photo</FieldLabel>
+                <PhotoAttachment value={memPhoto} onChange={setMemPhoto} layout="card" alt="Memory photo" />
               </div>
               <div className="flex items-center justify-end gap-2 pt-2">
                 <Button type="button" variant="ghost" onClick={() => setShowAddMemory(false)}>

@@ -9,6 +9,7 @@ import { loadBirthDetails } from '../../astro/birthStore';
 import { AIService } from '../../services/ai';
 import { offlineCompatibility, type CompatibilityInput } from '../../services/aiContentAstro';
 import { CompatibilityResult } from '../../types';
+import { ShareCardButton } from '../common/ShareCardButton';
 import { isAiLimitError } from '../../utils/aiErrors';
 import { Button, Card, Chip, FieldLabel, Input, PageContainer, PageHeader, ToolLayout } from '../common/UIPrimitives';
 import { BirthDetailsForm, JyotishNote, LanguageChips } from '../jyotish/JyotishCommon';
@@ -324,6 +325,22 @@ export const LoveCalculatorView: React.FC = () => {
             <Button variant="secondary" size="sm" onClick={() => openShareModal({ type: 'compatibility', data: result })} icon={<Share2 className="w-3.5 h-3.5" />}>
               Share card
             </Button>
+            <ShareCardButton
+              fileName={`lovemate-love-score-${result.overallScore}`}
+              spec={{
+                eyebrow: 'Love calculator',
+                names: [result.yourName, result.theirName],
+                hero: `${result.overallScore}%`,
+                heroLabel: 'match',
+                headline: result.verdict,
+                lines: [
+                  `Chemistry ${result.breakdown.chemistry}%`,
+                  `Communication ${result.breakdown.communication}%`,
+                  `Emotional connection ${result.breakdown.emotionalConnection}%`,
+                ],
+                footnote: 'For fun and conversation. Real love runs on effort and empathy.',
+              }}
+            />
           </div>
           <Button variant="primary" size="sm" onClick={() => setActiveTab(result.mode === 'jyotish' ? 'kundli' : 'chat')} icon={<MessageCircle className="w-3.5 h-3.5" />}>
             {result.mode === 'jyotish' ? 'Full Kundli Milan' : 'Talk to AI about this'}

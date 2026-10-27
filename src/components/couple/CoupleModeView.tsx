@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { copyText } from '../../utils/clipboard';
+import { ShareCardButton } from '../common/ShareCardButton';
 import {
   Badge,
   Button,
@@ -439,9 +440,31 @@ export const CoupleModeView: React.FC = () => {
 
           {/* Synthesis */}
           <Card className="space-y-5 animate-in fade-in">
-            <div className="flex items-center gap-2 pb-3 border-b border-zinc-100">
-              <Sparkles className="w-4 h-4 text-rose-500" />
-              <h3 className="text-base font-bold text-zinc-900">Couple synthesis</h3>
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-zinc-100">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-rose-500" />
+                <h3 className="text-base font-bold text-zinc-900">Couple synthesis</h3>
+              </div>
+              {pairs.length > 0 && (
+                <ShareCardButton
+                  fileName={`lovemate-couple-quiz-${matched.length}-of-${pairs.length}`}
+                  spec={{
+                    eyebrow: 'Couple quiz',
+                    names: [myName, partnerDisplayName],
+                    hero: `${matched.length}/${pairs.length}`,
+                    heroLabel: 'matched',
+                    headline:
+                      matched.length === pairs.length
+                        ? 'We answered every question the same way'
+                        : `We matched ${matched.length} of ${pairs.length} answers`,
+                    lines: [
+                      matched.length ? `In sync on ${matched.map((m) => m.q.category.toLowerCase()).join(', ')}` : 'Different takes, same team',
+                      `${questions.length} questions in Know Me Better`,
+                    ],
+                    footnote: 'Play together on LoveMate couple mode.',
+                  }}
+                />
+              )}
             </div>
 
             {pairs.length === 0 ? (
