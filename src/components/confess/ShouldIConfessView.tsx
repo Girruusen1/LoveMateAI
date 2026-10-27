@@ -28,27 +28,25 @@ export const ShouldIConfessView: React.FC = () => {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [result, setResult] = useState<ShouldIConfessResult | null>(null);
 
-  const handleEvaluate = () => {
+  const handleEvaluate = async () => {
     setIsEvaluating(true);
-    setTimeout(() => {
-      const evaluation = AIService.evaluateShouldIConfess({
+    try {
+      const evaluation = await AIService.evaluateShouldIConfess({
         howLongKnown,
         has1on1Hangouts,
         flirtyVibe,
         isCloseFriend,
+        story: situationStory,
       });
-      if ((evaluation as unknown) instanceof Promise) {
-        // Free AI limit reached: the app already showed a toast and the upgrade modal
-        (evaluation as unknown as Promise<unknown>).catch(() => undefined);
-        setIsEvaluating(false);
-        return;
-      }
       setResult(evaluation);
-      setIsEvaluating(false);
       triggerConfetti();
       addPoints(15, 'Confession Readiness Check');
       showToast('Decision analysis ready! 🚦', 'love');
-    }, 650);
+    } catch (e) {
+      if (!isAiLimitError(e)) showToast('Could not check your timing. Please retry.', 'info');
+    } finally {
+      setIsEvaluating(false);
+    }
   };
 
   const handleCopyScript = async (script: string) => {

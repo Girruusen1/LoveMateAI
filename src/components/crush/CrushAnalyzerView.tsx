@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AIService } from '../../services/ai';
+import { isAiLimitError } from '../../utils/aiErrors';
 import { CrushAnalysisResult } from '../../types';
 import {
   Button,
@@ -34,18 +35,19 @@ export const CrushAnalyzerView: React.FC = () => {
 
   const [initiates, setInitiates] = useState('half');
   const [replySpeed, setReplySpeed] = useState('fast');
-  const [length, setLength] = useState('balanced');
-  const [emojis, setEmojis] = useState('lots');
+  // Not asked in this form yet; empty means "not answered" so the AI doesn't treat a default as an observation
+  const [length] = useState('');
+  const [emojis] = useState('');
   const [plans, setPlans] = useState('yes');
   const [memory, setMemory] = useState('remembers_everything');
 
   const [result, setResult] = useState<CrushAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     setIsAnalyzing(true);
-    setTimeout(() => {
-      const res = AIService.analyzeCrush({
+    try {
+      const res = await AIService.analyzeCrush({
         initiates,
         replySpeed,
         length,
@@ -54,11 +56,14 @@ export const CrushAnalyzerView: React.FC = () => {
         memory,
       });
       setResult(res);
-      setIsAnalyzing(false);
       triggerConfetti();
       addPoints(20, 'Crush Signal Analysis');
       showToast('Signals analyzed! 🔥', 'love');
-    }, 700);
+    } catch (e) {
+      if (!isAiLimitError(e)) showToast('Could not analyze signals. Please retry.', 'info');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const form = (

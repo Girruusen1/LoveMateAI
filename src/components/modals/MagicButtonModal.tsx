@@ -113,7 +113,8 @@ export const MagicButtonModal: React.FC = () => {
       const plan = await AIService.generateSurprisePlan(
         surpriseBudget,
         `${surpriseMood} · ${surpriseDuration}`,
-        surpriseLocation
+        surpriseLocation,
+        user?.partnerName
       );
       setGeneratedSurprise(plan);
       triggerConfetti();

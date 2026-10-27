@@ -2,6 +2,8 @@ import {
   AgentActionPlan,
   AIPersonality,
   CompatibilityResult,
+  ConfessSituation,
+  CrushAnswers,
   ConversationCoachPlan,
   CoupleCalendarEvent,
   CrushAnalysisResult,
@@ -14,13 +16,16 @@ import {
   Language,
   LoveCard,
   LoveStoryEpisode,
+  OurStoryMemories,
   RealOurStoryChapter,
   RelationshipDetectiveResult,
+  RelationshipSignalResult,
   RelationshipDNAResult,
   ReplyCopilotResult,
   ReplySuggestion,
   RoleplayScenario,
   RoleplayScorecard,
+  ScrapbookCaptionContext,
   ScreenshotAnalysis,
   SharedGoal,
   SharedMemory,
@@ -260,10 +265,11 @@ Tell me what your recent interactions have looked like and let's decode it toget
     return "I hear you... tell me more about what you're thinking so I can really understand where your head is at.";
   }
 
-  static evaluateRoleplaySession(
-    scenario: RoleplayScenario,
+  static async evaluateRoleplaySession(
+    _scenario: RoleplayScenario,
     transcript: { sender: 'user' | 'ai'; text: string }[]
-  ): RoleplayScorecard {
+  ): Promise<RoleplayScorecard> {
+    await wait(500);
     const userMessages = transcript.filter((t) => t.sender === 'user');
     const wordCount = userMessages.reduce((acc, m) => acc + m.text.split(' ').length, 0);
 
@@ -460,14 +466,8 @@ Tell me what your recent interactions have looked like and let's decode it toget
   }
 
   // 8. V2 RELATIONSHIP SIGNALS (Green / Yellow / Red Flag Analyzer) 🚦
-  static analyzeRelationshipSignal(behaviorDescription: string): {
-    flagType: 'green' | 'yellow' | 'red';
-    label: string;
-    analysis: string;
-    whatToNotice: string[];
-    whatToAsk: string;
-    healthyResponse: string;
-  } {
+  static async analyzeRelationshipSignal(behaviorDescription: string): Promise<RelationshipSignalResult> {
+    await wait(550);
     const text = behaviorDescription.toLowerCase();
 
     if (
@@ -531,7 +531,8 @@ Tell me what your recent interactions have looked like and let's decode it toget
   }
 
   // 9. V2 RELATIONSHIP HEALTH CHECK 🌱
-  static generateHealthCheck(answers: Record<string, number>): HealthCheckResult {
+  static async generateHealthCheck(answers: Record<string, number>): Promise<HealthCheckResult> {
+    await wait(600);
     const scores = [
       { category: 'Communication' as const, score: answers['comm'] || 84, note: 'Open, respectful dialogue during disagreements.' },
       { category: 'Trust' as const, score: answers['trust'] || 90, note: 'Safety and confidence in each other’s integrity.' },
@@ -562,17 +563,17 @@ Tell me what your recent interactions have looked like and let's decode it toget
   }
 
   // 10. V2 OUR STORY GENERATOR (Real Memories) 📖
-  static generateOurStoryChapters(
+  static async generateOurStoryChapters(
     partners: string,
-    memories: {
-      howMet: string;
-      firstDate: string;
-      funnyMemory: string;
-      favoritePlace: string;
-      whatYouLove: string;
-    },
-    style: 'romantic' | 'funny' | 'cinematic' = 'romantic'
-  ): RealOurStoryChapter[] {
+    memories: OurStoryMemories,
+    _style: 'romantic' | 'funny' | 'cinematic' = 'romantic'
+  ): Promise<RealOurStoryChapter[]> {
+    await wait(700);
+    return AIService.sampleOurStoryChapters(partners, memories);
+  }
+
+  /** Offline sample chapters (synchronous, used for a view's initial content). */
+  static sampleOurStoryChapters(partners: string, memories: OurStoryMemories): RealOurStoryChapter[] {
     const names = partners || 'Two Souls';
     return [
       {
@@ -609,11 +610,12 @@ Tell me what your recent interactions have looked like and let's decode it toget
   }
 
   // 11. V2 AI ROMANTIC CARDS 🎨
-  static generateLoveCardMessage(
+  static async generateLoveCardMessage(
     type: string,
     recipient: string,
-    theme: string
-  ): { quote: string; personalNote: string } {
+    _theme: string
+  ): Promise<{ quote: string; personalNote: string }> {
+    await wait(450);
     if (type === 'Anniversary') {
       return {
         quote: "Loving you has been the calmest adventure and the wildest peace.",
@@ -725,7 +727,8 @@ Tell me what your recent interactions have looked like and let's decode it toget
     ];
   }
 
-  static analyzeCrush(answers: { initiates: string; replySpeed: string; length: string; emojis: string; plans: string; memory: string }): CrushAnalysisResult {
+  static async analyzeCrush(answers: CrushAnswers): Promise<CrushAnalysisResult> {
+    await wait(700);
     let score = 50;
     if (answers.initiates === 'often') score += 15;
     if (answers.replySpeed === 'instant') score += 12;
@@ -745,7 +748,8 @@ Tell me what your recent interactions have looked like and let's decode it toget
     };
   }
 
-  static evaluateShouldIConfess(situation: { howLongKnown: string; has1on1Hangouts: boolean; flirtyVibe: boolean; isCloseFriend: boolean }): ShouldIConfessResult {
+  static async evaluateShouldIConfess(_situation: ConfessSituation): Promise<ShouldIConfessResult> {
+    await wait(650);
     return {
       status: 'green',
       statusLabel: '🟢 Great Time to Confess',
@@ -763,7 +767,13 @@ Tell me what your recent interactions have looked like and let's decode it toget
     };
   }
 
-  static generateDateAndGift(occasion: string, budget: string, vibe: string): DateGiftIdea {
+  static async generateDateAndGift(occasion: string, budget: string, vibe: string): Promise<DateGiftIdea> {
+    await wait(600);
+    return AIService.sampleDateAndGift(occasion, budget, vibe);
+  }
+
+  /** Offline sample ideas (synchronous, used for a view's initial content). */
+  static sampleDateAndGift(occasion: string, budget: string, _vibe: string): DateGiftIdea {
     return {
       id: 'dg_' + Date.now(),
       occasion,
@@ -787,7 +797,21 @@ Tell me what your recent interactions have looked like and let's decode it toget
     };
   }
 
-  static generateStoryEpisode(protagonist: string, partner: string, howWeMet: string, setting: string, episodeNum: number): LoveStoryEpisode {
+  static async generateStoryEpisode(
+    protagonist: string,
+    partner: string,
+    howWeMet: string,
+    setting: string,
+    episodeNum: number,
+    _mood?: string,
+    _previousEpisodes: LoveStoryEpisode[] = []
+  ): Promise<LoveStoryEpisode> {
+    await wait(700);
+    return AIService.sampleStoryEpisode(protagonist, partner, howWeMet, setting, episodeNum);
+  }
+
+  /** Offline sample chapter (synchronous, used for a view's initial content). */
+  static sampleStoryEpisode(protagonist: string, partner: string, _howWeMet: string, setting: string, episodeNum: number): LoveStoryEpisode {
     return {
       episodeNumber: episodeNum,
       title: `Chapter ${episodeNum}: Weathering The Storm Together`,
@@ -852,7 +876,11 @@ Tell me what your recent interactions have looked like and let's decode it toget
   }
 
   // 3. AI Couple Scrapbook Caption Generator
-  static async generateScrapbookCaption(title: string, detail: string): Promise<{ romantic: string; funny: string; shortStory: string }> {
+  static async generateScrapbookCaption(
+    title: string,
+    detail: string,
+    _context: ScrapbookCaptionContext = {}
+  ): Promise<{ romantic: string; funny: string; shortStory: string }> {
     await wait(450);
     return {
       romantic: `In a world that never stops rushing, "${title}" was our quiet anchor — a moment where nothing else mattered.`,
@@ -1483,7 +1511,8 @@ You both thrive when there's an element of spontaneous fun rather than rigid sch
   static async generateSurprisePlan(
     budget: string,
     mood: string,
-    locationType: 'together' | 'long_distance'
+    locationType: 'together' | 'long_distance',
+    _partnerName?: string
   ): Promise<{
     title: string;
     mood: string;

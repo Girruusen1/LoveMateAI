@@ -102,6 +102,48 @@ export interface ShouldIConfessResult {
   suggestedScript: string;
 }
 
+/** Crush analyser answers (option codes from CrushAnalyzerView; an empty string means not asked). */
+export interface CrushAnswers {
+  initiates: string;
+  replySpeed: string;
+  length: string;
+  emojis: string;
+  plans: string;
+  memory: string;
+}
+
+export interface ConfessSituation {
+  howLongKnown: string;
+  has1on1Hangouts: boolean;
+  flirtyVibe: boolean;
+  isCloseFriend: boolean;
+  /** Optional free-text description of the situation. */
+  story?: string;
+}
+
+export interface RelationshipSignalResult {
+  flagType: 'green' | 'yellow' | 'red';
+  label: string;
+  analysis: string;
+  whatToNotice: string[];
+  whatToAsk: string;
+  healthyResponse: string;
+}
+
+export interface OurStoryMemories {
+  howMet: string;
+  firstDate: string;
+  funnyMemory: string;
+  favoritePlace: string;
+  whatYouLove: string;
+}
+
+export interface ScrapbookCaptionContext {
+  date?: string;
+  location?: string;
+  tags?: string;
+}
+
 export interface GameCard {
   id: string;
   category: string;

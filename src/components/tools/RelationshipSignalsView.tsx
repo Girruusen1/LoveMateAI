@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Activity, MessageCircle, Shield, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AIService } from '../../services/ai';
+import { RelationshipSignalResult } from '../../types';
+import { isAiLimitError } from '../../utils/aiErrors';
 import {
   Badge,
   Button,
@@ -21,7 +23,7 @@ export const RelationshipSignalsView: React.FC = () => {
     'They apologize when they are late and reschedule with a specific day, but rarely text first during work hours'
   );
   const [isEvaluating, setIsEvaluating] = useState(false);
-  const [result, setResult] = useState<ReturnType<typeof AIService.analyzeRelationshipSignal> | null>(null);
+  const [result, setResult] = useState<RelationshipSignalResult | null>(null);
 
   const sampleBehaviors = [
     'They apologize when they are late and immediately suggest an alternate day',
@@ -30,19 +32,22 @@ export const RelationshipSignalsView: React.FC = () => {
     'They get upset and give me the silent treatment for days after any minor disagreement',
   ];
 
-  const handleEvaluate = (customText?: string) => {
+  const handleEvaluate = async (customText?: string) => {
     const textToUse = customText || behaviorInput;
     if (!textToUse.trim()) return;
 
     setIsEvaluating(true);
-    setTimeout(() => {
-      const evaluation = AIService.analyzeRelationshipSignal(textToUse);
+    try {
+      const evaluation = await AIService.analyzeRelationshipSignal(textToUse);
       setResult(evaluation);
-      setIsEvaluating(false);
       addPoints(15, 'Analyzed Relationship Signal');
       triggerConfetti();
       showToast('Signal evaluated with psychological nuance! 🚦', 'love');
-    }, 550);
+    } catch (e) {
+      if (!isAiLimitError(e)) showToast('Could not evaluate that signal. Please retry.', 'info');
+    } finally {
+      setIsEvaluating(false);
+    }
   };
 
   const flagBadgeVariant = result

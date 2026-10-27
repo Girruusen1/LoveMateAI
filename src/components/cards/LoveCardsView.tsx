@@ -50,23 +50,20 @@ export const LoveCardsView: React.FC = () => {
     { id: 'minimal-ivory', label: 'Minimal Ivory', bgClass: 'from-[#FAF9F8] via-white to-stone-50', textClass: 'text-zinc-900', borderClass: 'border-stone-200', pngColors: ['#FAF9F8', '#fafaf9'] },
   ];
 
-  const handleGenerateContent = (type: LoveCard['type']) => {
+  const handleGenerateContent = async (type: LoveCard['type']) => {
     setIsGenerating(true);
     setCardType(type);
-    setTimeout(() => {
-      const msg = AIService.generateLoveCardMessage(type, recipient, theme);
-      if ((msg as unknown) instanceof Promise) {
-        // Free AI limit reached: the app already showed a toast and the upgrade modal
-        (msg as unknown as Promise<unknown>).catch(() => undefined);
-        setIsGenerating(false);
-        return;
-      }
+    try {
+      const msg = await AIService.generateLoveCardMessage(type, recipient, theme);
       setQuote(msg.quote);
       setPersonalNote(msg.personalNote);
-      setIsGenerating(false);
       triggerConfetti();
       showToast(`Generated ${type} message! ✨`, 'love');
-    }, 450);
+    } catch (e) {
+      if (!isAiLimitError(e)) showToast('Could not write the card. Please retry.', 'info');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSave = () => {

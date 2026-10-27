@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BookOpen, Bookmark, ChevronRight } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { AIService } from '../../services/ai';
+import { isAiLimitError } from '../../utils/aiErrors';
 import { LoveStory, LoveStoryEpisode } from '../../types';
 import {
   Badge,
@@ -24,8 +25,9 @@ export const AILoveStoryView: React.FC = () => {
   const [howWeMet, setHowWeMet] = useState('A shared laugh over a spilled iced coffee in a cozy bookstore');
   const [setting, setSetting] = useState('Rainy Mumbai evening');
   const [mood, setMood] = useState('Romantic & Heartwarming');
-  const [episodes, setEpisodes] = useState<LoveStoryEpisode[]>([
-    AIService.generateStoryEpisode(
+  // Offline sample so the page has content before the first generation
+  const [episodes, setEpisodes] = useState<LoveStoryEpisode[]>(() => [
+    AIService.sampleStoryEpisode(
       user?.name || 'You',
       user?.partnerName || 'your partner',
       'A shared laugh over a spilled iced coffee in a cozy bookstore',
@@ -35,17 +37,20 @@ export const AILoveStoryView: React.FC = () => {
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleNextEpisode = () => {
+  const handleNextEpisode = async () => {
     setIsGenerating(true);
     const nextNum = episodes.length + 1;
-    setTimeout(() => {
-      const newEp = AIService.generateStoryEpisode(protagonist, partner, howWeMet, setting, nextNum);
+    try {
+      const newEp = await AIService.generateStoryEpisode(protagonist, partner, howWeMet, setting, nextNum, mood, episodes);
       setEpisodes((prev) => [...prev, newEp]);
-      setIsGenerating(false);
       triggerConfetti();
       addPoints(15, 'Generated Next Story Chapter');
       showToast(`Chapter ${nextNum} unlocked! 📖`, 'love');
-    }, 700);
+    } catch (e) {
+      if (!isAiLimitError(e)) showToast('Could not write the next chapter. Please retry.', 'info');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSaveFullStory = () => {
