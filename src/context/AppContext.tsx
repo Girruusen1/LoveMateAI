@@ -1746,9 +1746,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     if (flash?.message) showToast(flash.message, 'love');
     if (flash?.onboarding) setOnboardingOpen(true);
-    if (flash && (flash as { trial?: boolean }).trial) {
+    // A brand-new account: start the trial, send the welcome (bell + email), honour a referral link.
+    const welcomeNewAccount = () => {
       startPlusTrial();
-      notify('welcome', {}, `welcome:${user?.id}`);
+      notify('welcome', { userName: user?.name }, `welcome:${user?.id}`);
       reportEvent('welcome', user?.name);
       let ref: string | null = null;
       try {
@@ -1758,11 +1759,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ref = null;
       }
       if (ref) claimReferralCode(ref);
-    }
+    };
+    if (flash && (flash as { trial?: boolean }).trial) welcomeNewAccount();
     // First sign-in through Google (no flash message, the page came back from Google).
     if (!flash && cloudIsNewAccount() && user) {
       showToast(`Welcome to LoveMate, ${user.name}! Your ${TRIAL_DAYS}-day Plus trial has started.`, 'love');
-      startPlusTrial();
+      welcomeNewAccount();
       setOnboardingOpen(true);
     }
     if (takePasswordRecovery()) openAuthModal('reset');
