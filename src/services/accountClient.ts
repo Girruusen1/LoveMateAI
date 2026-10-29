@@ -31,3 +31,44 @@ export interface AdminOverview {
 export const loadAdminOverview = () => call<AdminOverview>('GET', '/api/admin/overview');
 export const updateTicket = (id: string, changes: { status?: string; reply?: string }) =>
   call<{ ok: boolean; emailed: boolean }>('POST', '/api/admin/ticket', { id, ...changes });
+
+// ---------------------------------------------------------------- email marketing (admins)
+
+export interface MarketingTemplateInfo {
+  id: string;
+  name: string;
+  language: 'hinglish' | 'english';
+  audience: 'new' | 'users';
+  subject: string;
+  description: string;
+  sentCount: number;
+}
+export interface MarketingOverview {
+  emailEnabled: boolean;
+  templates: MarketingTemplateInfo[];
+  recent: { email: string; template: string; at: string; by: string; test?: boolean }[];
+  unsubscribed: number;
+  totalSent: number;
+}
+export type MarketingSendStatus = 'sent' | 'invalid' | 'unsubscribed' | 'already_sent' | 'duplicate' | 'failed';
+export interface MarketingSendResult {
+  input: string;
+  email?: string;
+  status: MarketingSendStatus;
+  error?: string;
+}
+export const loadMarketing = () => call<MarketingOverview>('GET', '/api/marketing/overview');
+export const sendMarketing = (template: string, recipients: string[], options: { test?: boolean; force?: boolean } = {}) =>
+  call<{ ok: boolean; results: MarketingSendResult[]; sent: number }>('POST', '/api/marketing/send', { template, recipients, ...options });
+
+/** The rendered email as HTML (for an iframe preview). */
+export async function previewMarketing(template: string): Promise<string | null> {
+  const token = await cloudAccessToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(`/api/marketing/preview/${encodeURIComponent(template)}`, { headers: { Authorization: `Bearer ${token}` } });
+    return res.ok ? await res.text() : null;
+  } catch {
+    return null;
+  }
+}

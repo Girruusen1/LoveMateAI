@@ -3,7 +3,8 @@ import { CreditCard, Heart, LifeBuoy, Mail, RefreshCw, Send, Share2, UserPlus, U
 import { useApp } from '../../context/AppContext';
 import { cloudEnabled } from '../../services/cloud';
 import { loadAdminOverview, updateTicket, type AdminOverview } from '../../services/accountClient';
-import { Badge, Button, Card, PageContainer, PageHeader, SectionHeading, Select, Textarea } from '../common/UIPrimitives';
+import { Badge, Button, Card, Chip, PageContainer, PageHeader, SectionHeading, Select, Textarea } from '../common/UIPrimitives';
+import { MarketingPanel } from './MarketingPanel';
 
 const STATUSES = ['open', 'in_progress', 'waiting', 'resolved', 'closed'] as const;
 const STATUS_LABEL: Record<string, string> = { open: 'Open', in_progress: 'In progress', waiting: 'Waiting for user', resolved: 'Resolved', closed: 'Closed' };
@@ -29,6 +30,7 @@ export const AdminDashboardView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [replies, setReplies] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<'open' | 'all'>('open');
+  const [section, setSection] = useState<'overview' | 'marketing'>('overview');
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -78,9 +80,20 @@ export const AdminDashboardView: React.FC = () => {
         }
       />
 
-      {error && <p className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-700">{error}</p>}
+      <div className="flex gap-2">
+        <Chip selected={section === 'overview'} onClick={() => setSection('overview')} icon={<Users />}>
+          Overview
+        </Chip>
+        <Chip selected={section === 'marketing'} onClick={() => setSection('marketing')} icon={<Mail />}>
+          Email marketing
+        </Chip>
+      </div>
 
-      {data && (
+      {section === 'marketing' && <MarketingPanel />}
+
+      {section === 'overview' && error && <p className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-700">{error}</p>}
+
+      {section === 'overview' && data && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Stat icon={<Users />} label="Accounts" value={data.users.total} hint={`${data.users.new7d} new this week · ${data.users.new30d} this month`} />
