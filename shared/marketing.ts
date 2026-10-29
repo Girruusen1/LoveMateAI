@@ -188,8 +188,8 @@ function shell(o: ShellInput): string {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
   <tr><td align="center" style="padding:0 0 22px;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td style="width:40px;height:40px;border-radius:12px;background:#e11d48;background-image:linear-gradient(135deg,#e11d48,#fb7185);text-align:center;font-size:22px;line-height:40px;">&#128151;</td>
-      <td style="padding-left:10px;font-size:22px;font-weight:800;letter-spacing:-0.4px;color:#be123c;${FONT}">LoveMate</td>
+      <td style="width:44px;height:44px;"><img src="${o.appUrl}/brand/email-mark.png" width="44" height="44" alt="" style="display:block;width:44px;height:44px;border:0;"></td>
+      <td style="padding-left:9px;font-size:22px;font-weight:800;letter-spacing:-0.4px;color:#18181b;${FONT}">Love<span style="color:#f43f5e;">Mate</span></td>
     </tr></table>
   </td></tr>
   <tr><td style="background:#ffffff;border-radius:24px;border:1px solid #ffd9e1;">
