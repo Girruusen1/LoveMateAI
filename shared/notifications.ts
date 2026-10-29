@@ -383,30 +383,61 @@ export interface EmailLayoutOptions {
 
 /** Branded, mobile-friendly email (tables and inline styles so it renders in Gmail, Outlook and phones). */
 export function renderEmailHtml(type: NotificationType, n: RenderedNotification, o: EmailLayoutOptions): string {
-  const action = `${o.appUrl.replace(/\/$/, '')}/#/${n.actionTab === 'home' ? '' : n.actionTab}`;
+  const base = o.appUrl.replace(/\/$/, '');
+  const action = `${base}/#/${n.actionTab === 'home' ? '' : n.actionTab}`;
   const why = `You're getting this because "${NOTIFICATION_CATALOG[type].label}" emails are on for your LoveMate account.`;
+  const link = (href: string, label: string) => `<a href="${esc(href)}" style="color:#be123c;text-decoration:underline;">${esc(label)}</a>`;
+  const footerLinks = [o.manageUrl ? link(o.manageUrl, 'Notification settings') : '', o.unsubscribeUrl ? link(o.unsubscribeUrl, 'Unsubscribe') : '', link(base, 'Open LoveMate')]
+    .filter(Boolean)
+    .join('<span style="color:#d4d4d8;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>');
+  const font = "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;";
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light"><title>${esc(n.emailSubject)}</title></head>
-<body style="margin:0;padding:0;background:#fdf2f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#18181b;">
-<span style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(n.emailPreheader)}</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fdf2f4;padding:24px 12px;">
-<tr><td align="center">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
-    <tr><td style="padding:4px 8px 16px;font-size:20px;font-weight:800;color:#e11d48;letter-spacing:-0.3px;">💗 LoveMate</td></tr>
-    <tr><td style="background:#ffffff;border-radius:20px;border:1px solid #fbe1e6;padding:32px 28px;">
-      <div style="width:56px;height:56px;border-radius:16px;background:#fff1f3;font-size:28px;line-height:56px;text-align:center;">${n.emoji}</div>
-      <h1 style="margin:20px 0 8px;font-size:22px;line-height:1.3;color:#18181b;">${esc(n.title)}</h1>
-      ${n.emailParagraphs.map((p) => `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#3f3f46;">${esc(p)}</p>`).join('\n      ')}
-      <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:22px;"><tr><td style="border-radius:12px;background:#e11d48;">
-        <a href="${esc(action)}" style="display:inline-block;padding:13px 22px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">${esc(n.actionLabel)}</a>
-      </td></tr></table>
+<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>${esc(n.emailSubject)}</title></head>
+<body style="margin:0;padding:0;background:#fff1f4;${font}color:#18181b;-webkit-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">${esc(n.emailPreheader)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fff1f4;">
+<tr><td align="center" style="padding:32px 12px 40px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+
+    <!-- Wordmark -->
+    <tr><td align="center" style="padding:0 0 22px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="width:40px;height:40px;border-radius:12px;background:#e11d48;background-image:linear-gradient(135deg,#e11d48,#fb7185);text-align:center;font-size:22px;line-height:40px;">&#128151;</td>
+        <td style="padding-left:10px;font-size:22px;font-weight:800;letter-spacing:-0.4px;color:#be123c;${font}">LoveMate</td>
+      </tr></table>
     </td></tr>
-    <tr><td style="padding:18px 12px 0;font-size:12px;line-height:1.6;color:#71717a;text-align:center;">
-      ${esc(why)}<br>
-      ${o.manageUrl ? `<a href="${esc(o.manageUrl)}" style="color:#e11d48;">Manage notifications</a>` : ''}${o.manageUrl && o.unsubscribeUrl ? ' · ' : ''}${o.unsubscribeUrl ? `<a href="${esc(o.unsubscribeUrl)}" style="color:#e11d48;">Unsubscribe from these emails</a>` : ''}<br>
-      LoveMate offers relationship suggestions, not professional counselling.${o.footerAddress ? `<br>${esc(o.footerAddress)}` : ''}
+
+    <!-- Card -->
+    <tr><td style="background:#ffffff;border-radius:24px;border:1px solid #ffd9e1;overflow:hidden;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="height:6px;background:#e11d48;background-image:linear-gradient(90deg,#e11d48,#f43f5e,#fb7185);font-size:0;line-height:0;">&nbsp;</td></tr>
+        <tr><td align="center" style="padding:40px 32px 36px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="width:76px;height:76px;border-radius:38px;background:#fff1f3;border:1px solid #fecdd3;text-align:center;font-size:36px;line-height:76px;">${n.emoji}</td>
+          </tr></table>
+          <h1 style="margin:22px 0 12px;font-size:26px;line-height:1.25;font-weight:800;letter-spacing:-0.4px;color:#111827;${font}">${esc(n.title)}</h1>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="max-width:460px;"><tr><td align="center">
+            ${n.emailParagraphs.map((p) => `<p style="margin:0 0 14px;font-size:16px;line-height:1.7;color:#4b5563;${font}">${esc(p)}</p>`).join('')}
+          </td></tr></table>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:14px auto 0;"><tr>
+            <td style="border-radius:999px;background:#e11d48;background-image:linear-gradient(90deg,#e11d48,#f43f5e);">
+              <a href="${esc(action)}" style="display:inline-block;padding:15px 34px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px;${font}">${esc(n.actionLabel)}&nbsp;&rarr;</a>
+            </td>
+          </tr></table>
+          <p style="margin:18px 0 0;font-size:13px;line-height:1.6;color:#9ca3af;${font}">Button not working? Open ${link(action, action.replace(/^https?:\/\//, ''))}</p>
+        </td></tr>
+      </table>
     </td></tr>
+
+    <!-- Footer -->
+    <tr><td align="center" style="padding:24px 16px 0;font-size:12px;line-height:1.7;color:#9ca3af;${font}">
+      <p style="margin:0 0 8px;">${footerLinks}</p>
+      <p style="margin:0 0 6px;">${esc(why)}</p>
+      <p style="margin:0;">LoveMate offers relationship suggestions, not professional counselling.${o.footerAddress ? `<br>${esc(o.footerAddress)}` : ''}</p>
+      <p style="margin:10px 0 0;color:#be123c;">Made with &#128151; in India</p>
+    </td></tr>
+
   </table>
 </td></tr></table>
 </body></html>`;
