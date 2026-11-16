@@ -51,7 +51,10 @@ createServer(async (req, res) => {
     if (await handleAstro(req, res)) return;
     if (await handleMarketing(req, res)) return;
     const url = new URL(req.url ?? '/', 'http://localhost');
-    const asset = (await serveStatic(url.pathname)) ?? (await serveStatic('/index.html')); // SPA fallback
+    // Real files are served as they are. App routes fall back to index.html, but a missing file with an
+    // extension (robots.txt that does not exist, a typo'd image) is a proper 404, not the app shell.
+    const looksLikeFile = /\.[a-z0-9]{1,8}$/i.test(url.pathname);
+    const asset = (await serveStatic(url.pathname)) ?? (looksLikeFile ? null : await serveStatic('/index.html'));
     if (!asset) {
       res.statusCode = 404;
       res.end('Not found - run "npm run build" first.');
