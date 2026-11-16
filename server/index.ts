@@ -27,6 +27,9 @@ const TYPES: Record<string, string> = {
   '.webp': 'image/webp',
   '.ico': 'image/x-icon',
   '.json': 'application/json; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
+  '.woff2': 'font/woff2',
 };
 
 async function serveStatic(pathname: string): Promise<{ body: Buffer; type: string } | null> {
