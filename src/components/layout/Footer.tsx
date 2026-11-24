@@ -5,6 +5,15 @@ import { LanguageSwitch, useT } from '../../i18n';
 import { ActiveTab } from '../../types';
 import { LoveMateLogo } from '../common/LoveMateLogo';
 import { ThemeToggle } from '../common/ThemeToggle';
+import { SOCIAL } from '../../../shared/links';
+
+const InstagramIcon: React.FC = () => (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+  </svg>
+);
 
 /** `member` links only make sense with an account and are hidden from visitors. Labels are translated with t(). */
 const LINKS: { label: string; tab: ActiveTab; member?: boolean }[] = [
@@ -65,6 +74,10 @@ export const Footer: React.FC = () => {
                   {t(l.label)}
                 </button>
               ))}
+              <a href={SOCIAL.instagram} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:text-zinc-900 transition-colors">
+                <InstagramIcon />
+                Instagram
+              </a>
             </nav>
             <span className="hidden sm:inline text-zinc-400" aria-hidden="true">
               ·

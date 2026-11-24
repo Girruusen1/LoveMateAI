@@ -1,8 +1,9 @@
 /**
  * LoveMate notifications: one catalogue, one set of templates, one set of rules.
  * Used by the website (bell + browser pop-ups) and by the server (emails, later WhatsApp),
- * so a reminder reads the same everywhere. No imports: this file runs in the browser and in Node.
+ * so a reminder reads the same everywhere. Only dependency-free shared imports: this file runs in the browser and in Node.
  */
+import { SOCIAL } from './links.ts';
 
 export type NotificationType =
   | 'welcome'
@@ -387,7 +388,7 @@ export function renderEmailHtml(type: NotificationType, n: RenderedNotification,
   const action = `${base}/#/${n.actionTab === 'home' ? '' : n.actionTab}`;
   const why = `You're getting this because "${NOTIFICATION_CATALOG[type].label}" emails are on for your LoveMate account.`;
   const link = (href: string, label: string) => `<a href="${esc(href)}" style="color:#be123c;text-decoration:underline;">${esc(label)}</a>`;
-  const footerLinks = [o.manageUrl ? link(o.manageUrl, 'Notification settings') : '', o.unsubscribeUrl ? link(o.unsubscribeUrl, 'Unsubscribe') : '', link(base, 'Open LoveMate')]
+  const footerLinks = [o.manageUrl ? link(o.manageUrl, 'Notification settings') : '', o.unsubscribeUrl ? link(o.unsubscribeUrl, 'Unsubscribe') : '', link(base, 'Open LoveMate'), link(SOCIAL.instagram, 'Instagram')]
     .filter(Boolean)
     .join('<span style="color:#d4d4d8;">&nbsp;&nbsp;·&nbsp;&nbsp;</span>');
   const font = "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;";

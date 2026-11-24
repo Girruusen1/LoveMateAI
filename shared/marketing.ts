@@ -8,6 +8,8 @@
  * 7 days of Plus free for every new account, no card needed.
  */
 
+import { SOCIAL } from './links.ts';
+
 export type MarketingLanguage = 'hinglish' | 'english';
 
 export interface MarketingTemplate {
@@ -206,7 +208,7 @@ function shell(o: ShellInput): string {
     </table>
   </td></tr>
   <tr><td align="center" style="padding:24px 16px 0;font-size:12px;line-height:1.7;color:#9ca3af;${FONT}">
-    <p style="margin:0 0 8px;"><a href="${o.appUrl}" style="color:#be123c;">${o.footer.open}</a><span style="color:#d4d4d8;">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a href="${o.appUrl}/#/pro" style="color:#be123c;">${o.footer.plans}</a><span style="color:#d4d4d8;">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a href="${o.appUrl}/#/privacy" style="color:#be123c;">${o.footer.privacy}</a><span style="color:#d4d4d8;">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a href="${o.unsubscribeUrl}" style="color:#be123c;">${o.footer.unsubscribe}</a></p>
+    <p style="margin:0 0 8px;"><a href="${o.appUrl}" style="color:#be123c;">${o.footer.open}</a><span style="color:#d4d4d8;">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a href="${o.appUrl}/#/pro" style="color:#be123c;">${o.footer.plans}</a><span style="color:#d4d4d8;">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a href="${o.appUrl}/#/privacy" style="color:#be123c;">${o.footer.privacy}</a><span style="color:#d4d4d8;">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a href="${SOCIAL.instagram}" style="color:#be123c;">Instagram</a><span style="color:#d4d4d8;">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a href="${o.unsubscribeUrl}" style="color:#be123c;">${o.footer.unsubscribe}</a></p>
     <p style="margin:0 0 6px;">${o.footer.why}</p>
     <p style="margin:0;">${o.footer.disclaimer}</p>
     <p style="margin:10px 0 0;color:#be123c;">${o.footer.made}</p>
