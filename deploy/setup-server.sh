@@ -2,7 +2,7 @@
 # LoveMate server setup for Ubuntu 24.04 (Oracle Cloud ARM/AMD, Hostinger, any VPS).
 # Run as the normal login user (e.g. "ubuntu"), not root:
 #   bash setup-server.sh                  # first run: installs everything and prints a key for GitHub
-#   bash setup-server.sh lovemateai.in    # later: adds free HTTPS for your domain
+#   bash setup-server.sh lovemate.duckdns.org   # later: adds free HTTPS for the domain
 # Safe to run again: every step checks what is already done.
 set -euo pipefail
 

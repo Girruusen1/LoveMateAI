@@ -1,0 +1,23 @@
+{
+  "name": "lovemate_intro_v1",
+  "language": "hi",
+  "category": "MARKETING",
+  "allow_category_change": true,
+  "components": [
+    { "type": "HEADER", "format": "TEXT", "text": "Pyaar ke liye aapka AI wingman" },
+    {
+      "type": "BODY",
+      "text": "Hi {{1}} 👋\n\nMessage samajh nahi aa raha? Dil ki baat kehni hai par shabd nahi mil rahe? LoveMate hai aapka AI wingman, pyaar aur rishton ke liye.\n\n• Confusing messages decode karo, asli matlab jaano\n• Perfect confession ya reply likho, English ya Hinglish mein\n• Dates aur trips plan karo, couple games khelo, mushkil baatein practise karo\n\nPehle 7 din Plus free, card ki zaroorat nahi. Uske baad sirf ₹149 mahina.",
+      "example": { "body_text": [["Priya"]] }
+    },
+    { "type": "FOOTER", "text": "STOP likhein to messages band" },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        { "type": "QUICK_REPLY", "text": "Tell me more" },
+        { "type": "QUICK_REPLY", "text": "Stop messages" },
+        { "type": "URL", "text": "Start free", "url": "https://lovemateai.in" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "lovemate_intro_v1",
+  "language": "en_US",
+  "category": "MARKETING",
+  "allow_category_change": true,
+  "components": [
+    { "type": "HEADER", "format": "TEXT", "text": "Your AI wingman for love" },
+    {
+      "type": "BODY",
+      "text": "Hi {{1}} 👋\n\nConfused by a text? Want to say how you feel but can't find the words? LoveMate is your AI wingman for love and relationships.\n\n• Decode confusing messages and know what they really mean\n• Write the perfect confession or reply, in English or Hinglish\n• Plan dates and trips, play couple games, practise the hard conversations\n\nYour first 7 days of Plus are free, no card needed. After that, just ₹149 a month.",
+      "example": { "body_text": [["Priya"]] }
+    },
+    { "type": "FOOTER", "text": "Reply STOP to stop these messages" },
+    {
+      "type": "BUTTONS",
+      "buttons": [
+        { "type": "QUICK_REPLY", "text": "Tell me more" },
+        { "type": "QUICK_REPLY", "text": "Stop messages" },
+        { "type": "URL", "text": "Start free", "url": "https://lovemateai.in" }
+      ]
+    }
+  ]
+}
