@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { CreditCard, Heart, LifeBuoy, Mail, RefreshCw, Send, Share2, UserPlus, Users } from 'lucide-react';
+import { CreditCard, Heart, LifeBuoy, Mail, MessageCircle, RefreshCw, Send, Share2, UserPlus, Users } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { cloudEnabled } from '../../services/cloud';
 import { loadAdminOverview, updateTicket, type AdminOverview } from '../../services/accountClient';
 import { Badge, Button, Card, Chip, PageContainer, PageHeader, SectionHeading, Select, Textarea } from '../common/UIPrimitives';
 import { MarketingPanel } from './MarketingPanel';
+import { WhatsAppPanel } from './WhatsAppPanel';
 
 const STATUSES = ['open', 'in_progress', 'waiting', 'resolved', 'closed'] as const;
 const STATUS_LABEL: Record<string, string> = { open: 'Open', in_progress: 'In progress', waiting: 'Waiting for user', resolved: 'Resolved', closed: 'Closed' };
@@ -30,7 +31,7 @@ export const AdminDashboardView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [replies, setReplies] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<'open' | 'all'>('open');
-  const [section, setSection] = useState<'overview' | 'marketing'>('overview');
+  const [section, setSection] = useState<'overview' | 'marketing' | 'whatsapp'>('overview');
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -87,9 +88,13 @@ export const AdminDashboardView: React.FC = () => {
         <Chip selected={section === 'marketing'} onClick={() => setSection('marketing')} icon={<Mail />}>
           Email marketing
         </Chip>
+        <Chip selected={section === 'whatsapp'} onClick={() => setSection('whatsapp')} icon={<MessageCircle />}>
+          WhatsApp
+        </Chip>
       </div>
 
       {section === 'marketing' && <MarketingPanel />}
+      {section === 'whatsapp' && <WhatsAppPanel />}
 
       {section === 'overview' && error && <p className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-sm text-rose-700">{error}</p>}
 

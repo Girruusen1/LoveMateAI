@@ -72,3 +72,39 @@ export async function previewMarketing(template: string): Promise<string | null>
     return null;
   }
 }
+
+// ---------------------------------------------------------------- WhatsApp templates (admins)
+
+export type WhatsAppDeliveryStatus = 'sent' | 'delivered' | 'read' | 'failed';
+export interface WhatsAppMessageRow {
+  id: string;
+  phone: string;
+  name: string;
+  template: string;
+  language: string;
+  by: string;
+  sentAt: string;
+  status: WhatsAppDeliveryStatus;
+  deliveredAt?: string;
+  readAt?: string;
+  failedAt?: string;
+  error?: string;
+}
+export interface WhatsAppOverview {
+  enabled: boolean;
+  receiptsEnabled: boolean;
+  templates: { name: string; label: string; languages: readonly string[] }[];
+  messages: WhatsAppMessageRow[];
+  counts: { total: number; sent: number; delivered: number; read: number; failed: number };
+}
+export type WhatsAppSendStatus = 'sent' | 'invalid' | 'duplicate' | 'failed';
+export interface WhatsAppSendResult {
+  input: string;
+  phone?: string;
+  name?: string;
+  status: WhatsAppSendStatus;
+  error?: string;
+}
+export const loadWhatsApp = () => call<WhatsAppOverview>('GET', '/api/whatsapp/overview');
+export const sendWhatsApp = (template: string, language: string, recipients: string[]) =>
+  call<{ ok: boolean; results: WhatsAppSendResult[]; sent: number }>('POST', '/api/whatsapp/send', { template, language, recipients });

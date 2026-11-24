@@ -12,6 +12,7 @@ import { handleNotify } from './notify/handler.ts';
 import { handleAccount } from './account/handler.ts';
 import { handleAstro } from './astro/handler.ts';
 import { handleMarketing } from './marketing/handler.ts';
+import { handleWhatsApp, whatsappEnabled } from './whatsapp/handler.ts';
 import { notificationsEnabled, runReminders } from './notify/service.ts';
 import { isConfigured, modelFor, providerChain } from './genai/config.ts';
 
@@ -53,6 +54,7 @@ createServer(async (req, res) => {
     if (await handleAccount(req, res)) return;
     if (await handleAstro(req, res)) return;
     if (await handleMarketing(req, res)) return;
+    if (await handleWhatsApp(req, res)) return;
     const url = new URL(req.url ?? '/', 'http://localhost');
     // Real files are served as they are. App routes fall back to index.html, but a missing file with an
     // extension (robots.txt that does not exist, a typo'd image) is a proper 404, not the app shell.
@@ -76,6 +78,7 @@ createServer(async (req, res) => {
   console.log(isConfigured() ? `GenAI providers (in failover order): ${providerChain().map((id) => `${id} (${modelFor(id)})`).join(' -> ')}` : 'GenAI disabled (set GROQ_API_KEY and/or OPENROUTER_API_KEY for free AI); the app runs in demo mode.');
   console.log(notificationsEnabled() ? 'Email notifications: on (hourly reminders)' : 'Email notifications: off (set SMTP_USER, SMTP_PASS and SUPABASE_SECRET_KEY)');
   console.log(paymentsEnabled() ? 'Payments: Razorpay subscriptions enabled' : 'Payments: off (set RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET and SUPABASE_SECRET_KEY)');
+  console.log(whatsappEnabled() ? 'WhatsApp templates: on (admin page)' : 'WhatsApp templates: off (set WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID)');
 });
 
 // Hourly reminder emails (birthdays, trial ending, renewals, streaks). The server stays on, so no outside cron is needed.
